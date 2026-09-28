@@ -97,14 +97,14 @@ jobs:
           .\packaging\windows\msix\build-msix.ps1 -Version "$env:VERSION" -PublishDir "$env:GITHUB_WORKSPACE\publish\win-x64" -OutputDir "$env:GITHUB_WORKSPACE\packaging\windows"
 
       - name: Upload Windows Installer (.exe)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-installer
           path: packaging/windows/FryPDF-Setup-${{ needs.determine-version.outputs.version }}.exe
           if-no-files-found: error
 
       - name: Upload Windows MSIX Package (.msix)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-msix
           path: |
@@ -155,7 +155,7 @@ jobs:
             --output "FryPDF-$VERSION-arm64.dmg"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-dmg
           path: FryPDF-${{ needs.determine-version.outputs.version }}-arm64.dmg
