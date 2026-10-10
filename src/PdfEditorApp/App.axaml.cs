@@ -9,6 +9,7 @@ using PdfEditorApp.ViewModels.Tools.Security;
 using PdfEditorApp.ViewModels.Tools.Conversion;
 using PdfEditorApp.ViewModels.Tools.Intelligence;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -44,6 +45,19 @@ public partial class App : Application
         // all Debug.WriteLine calls from plugin loading, path resolution, and CDN fetching
         // are captured in the in-process diagnostic log buffer from the very first frame.
         _ = PdfEditorApp.Services.AppLogService.Instance;
+
+        // Raw input (keyboard/mouse) is dispatched synchronously via Dispatcher.Send, which
+        // wraps the call in try/catch and offers this event as the only way to intercept it.
+        // Without a handler here, any exception thrown while handling a key/pointer event
+        // anywhere in the app - including inside third-party controls we don't own, such as
+        // AvaloniaEdit's CompletionWindow - is rethrown unhandled and aborts the whole process.
+        // Marking it Handled logs and recovers instead of losing the user's in-progress work.
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            Debug.WriteLine($"[Dispatcher.UnhandledException] {e.Exception}");
+            e.Handled = true;
+        };
+
         LiveChartsCore.LiveCharts.Configure(config => LiveChartsCore.SkiaSharpView.LiveChartsSkiaSharp.UseDefaults(config));
         AvaloniaXamlLoader.Load(this);
     }

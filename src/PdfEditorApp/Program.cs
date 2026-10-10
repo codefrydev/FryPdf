@@ -1,8 +1,11 @@
 using Avalonia;
 using Avalonia.Logging;
 using System;
+using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using PdfEditorApp.Plugins.Cli;
+using PdfEditorApp.Services;
 
 namespace PdfEditorApp;
 
@@ -14,6 +17,11 @@ sealed class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            WriteCrashLog("AppDomain.UnhandledException", e.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            WriteCrashLog("TaskScheduler.UnobservedTaskException", e.Exception);
+
         if (HeadlessCliRunner.IsCliInvocation(args))
         {
             return HeadlessCliRunner.RunCliAsync(args).GetAwaiter().GetResult();
@@ -22,6 +30,28 @@ sealed class Program
         ConfigureThreadPool();
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+
+    /// <summary>
+    /// Last-resort diagnostic for an exception that would otherwise abort the process with zero
+    /// trace anywhere. Writes synchronously and directly to disk rather than through
+    /// <see cref="AppLogService"/>, whose file writer enqueues to a background channel with no
+    /// guarantee it flushes before the CLR fails fast.
+    /// </summary>
+    private static void WriteCrashLog(string source, Exception? ex)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(FryPdfPaths.LogFilePath)!);
+            File.AppendAllText(FryPdfPaths.LogFilePath,
+                $"[{DateTime.Now:HH:mm:ss.fff}] [Fatal  ] [{source}]{Environment.NewLine}{ex}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Best-effort: never let crash logging itself throw during process teardown.
+        }
+
+        Console.Error.WriteLine($"[{source}] {ex}");
     }
 
     /// <summary>
