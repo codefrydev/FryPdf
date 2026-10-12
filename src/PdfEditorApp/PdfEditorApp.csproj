@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
     <ApplicationIcon>Assets/app-logo.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version Condition="'$(Version)' == ''">0.1.1</Version>
+    <Version Condition="'$(Version)' == ''">0.1.2</Version>
     <AssemblyTitle>FryPDF</AssemblyTitle>
     <Product>FryPDF</Product>
     <Company>Code Fry Dev</Company>

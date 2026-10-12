@@ -20,7 +20,10 @@ sealed class Program
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             WriteCrashLog("AppDomain.UnhandledException", e.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
             WriteCrashLog("TaskScheduler.UnobservedTaskException", e.Exception);
+            e.SetObserved();
+        };
 
         if (HeadlessCliRunner.IsCliInvocation(args))
         {

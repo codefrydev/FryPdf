@@ -8,7 +8,7 @@
     <RootNamespace>PdfEditorApp.Core</RootNamespace>
     <PackageId Condition="'$(PackageId)' == ''">FryPdf.PluginSdk</PackageId>
     <Title>FryPDF Plugin SDK</Title>
-    <Version Condition="'$(Version)' == ''">0.1.1</Version>
+    <Version Condition="'$(Version)' == ''">0.1.2</Version>
     <!--
       Plugin ABI version. This assembly is the plugin contract: external plugins compile against it
       and never ship it, so its identity must NOT move with the application's release version —

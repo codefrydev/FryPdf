@@ -144,6 +144,7 @@ public partial class HomeViewModel : ViewModelBase, IServiceProvider, IDisposabl
     private bool _isToolPageActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPluginsWorkspaceActive))]
     [NotifyPropertyChangedFor(nameof(IsFullViewportActive))]
     [NotifyPropertyChangedFor(nameof(IsStandardScrollableContentActive))]
     [NotifyPropertyChangedFor(nameof(IsTopSearchBarVisible))]
@@ -189,8 +190,8 @@ public partial class HomeViewModel : ViewModelBase, IServiceProvider, IDisposabl
     public bool IsHelpSection => SelectedNavSection == HomeNavSection.Help;
     public bool IsSettingsSection => SelectedNavSection == HomeNavSection.Settings;
     public bool IsPluginsSection => SelectedNavSection == HomeNavSection.Plugins;
-    public bool IsPluginsWorkspaceActive => SelectedNavSection == HomeNavSection.Plugins && !IsToolPageActive;
-    public bool IsFullViewportActive => !IsToolPageActive && (ActiveNavDescriptor?.DisplayMode is PdfEditorApp.Core.Plugins.Descriptors.NavigationDisplayMode.FullViewport or PdfEditorApp.Core.Plugins.Descriptors.NavigationDisplayMode.ImmersiveStudio || SelectedNavSection == HomeNavSection.Plugins);
+    public bool IsPluginsWorkspaceActive => SelectedNavSection == HomeNavSection.Plugins && !IsToolPageActive && (ActiveNavDescriptor == null || string.Equals(ActiveNavDescriptor.Id, "Plugins", StringComparison.OrdinalIgnoreCase));
+    public bool IsFullViewportActive => !IsToolPageActive && (ActiveNavDescriptor?.DisplayMode is PdfEditorApp.Core.Plugins.Descriptors.NavigationDisplayMode.FullViewport or PdfEditorApp.Core.Plugins.Descriptors.NavigationDisplayMode.ImmersiveStudio || IsPluginsWorkspaceActive);
     public bool IsStandardScrollableContentActive => !IsToolPageActive && !IsFullViewportActive;
     public bool IsTopSearchBarVisible => !IsToolPageActive && ActiveNavDescriptor != null && !ActiveNavDescriptor.HideTopSearchBar;
 
@@ -220,7 +221,7 @@ public partial class HomeViewModel : ViewModelBase, IServiceProvider, IDisposabl
                 // fallback
             }
 
-            return "0.1.1";
+            return "0.1.2";
         }
     }
 

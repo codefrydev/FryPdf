@@ -26,7 +26,7 @@
       Or set the FRYPDF_HOME environment variable to your installed FryPDF folder.
       
     Option B (NuGet SDK) - Once published to NuGet.org:
-      <PackageReference Include="FryPdf.PluginSdk" Version="0.1.1" PrivateAssets="all" />
+      <PackageReference Include="FryPdf.PluginSdk" Version="0.1.2" PrivateAssets="all" />
       
     The <Choose> block below enables this project to compile both:
       1) Standalone on an external developer's machine using their installed FryPDF app.

@@ -11,7 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
-## [0.0.7] - 2026-09-12
+## [0.1.2] - 2026-10-12
+
+### Added
+- Headless Avalonia UI snapshot and plugin testing suite (`tools/UiSnapshots`).
+- Automated off-screen plugin verification and snapshot generation.
+- Centrally managed package references for `Avalonia.Headless` and `Avalonia.Skia`.
+
+### Changed
+- Improved dynamic plugin studio navigation and viewport rendering in `HomeViewModel`.
+- Added unobserved task exception recovery in `Program.cs` to safeguard background tasks.
+
+### Fixed
+- Resolved navigation occlusion bug where dynamic full-viewport studio views remained occluded after installing or opening from the Plugins workspace.
 
 ### Added
 - Sidebar footer with theme toggle and version display.

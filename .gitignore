@@ -100,3 +100,4 @@ publish/
 *.msix
 *.cer
 packaging/windows/FryPDF-Setup-*.exe
+test-artifacts/snapshots/*
