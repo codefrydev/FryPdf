@@ -158,7 +158,7 @@ public sealed class OverlayRegistry : IOverlayRegistry, IDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[OverlayRegistry] Error creating view for {desc.Id}: {ex.Message}");
+                AppLogService.Instance?.LogError("OverlayRegistry", $"Error creating view for '{desc.Id}' via ViewFactory", ex);
             }
         }
         else if (desc.ViewType != null)
@@ -169,8 +169,13 @@ public sealed class OverlayRegistry : IOverlayRegistry, IDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[OverlayRegistry] Error instantiating ViewType {desc.ViewType}: {ex.Message}");
+                AppLogService.Instance?.LogError("OverlayRegistry", $"Error instantiating ViewType {desc.ViewType} for '{desc.Id}'", ex);
             }
+        }
+
+        if (content == null)
+        {
+            AppLogService.Instance?.Log(AppLogLevel.Error, "OverlayRegistry", $"Overlay content resolved to null for '{desc.Id}'.");
         }
 
         var instance = new OverlayInstanceViewModel(desc, inst =>

@@ -21,8 +21,19 @@ sealed class Program
             WriteCrashLog("AppDomain.UnhandledException", e.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            WriteCrashLog("TaskScheduler.UnobservedTaskException", e.Exception);
             e.SetObserved();
+            var baseEx = e.Exception?.GetBaseException();
+            if (baseEx is OperationCanceledException or TaskCanceledException)
+            {
+                return;
+            }
+            if (baseEx is InvalidOperationException inv && inv.Message.Contains("Looping animations"))
+            {
+                AppLogService.Instance?.Log(AppLogLevel.Warning, "Animation",
+                    $"Suppressed benign unobserved looping animation exception: {inv.Message}");
+                return;
+            }
+            WriteCrashLog("TaskScheduler.UnobservedTaskException", e.Exception);
         };
 
         if (HeadlessCliRunner.IsCliInvocation(args))

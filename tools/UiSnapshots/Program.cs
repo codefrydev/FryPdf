@@ -167,6 +167,33 @@ public static class Program
                     }
                 }
             }
+            // 3. Test In-Situ Integration: HomeView navigation and ShellOverlayHost
+            Console.WriteLine("\n--- Testing In-Situ Host Integration ---");
+            var mainVm = sp.GetService<PdfEditorApp.ViewModels.MainViewModel>();
+            var homeVm = sp.GetService<PdfEditorApp.ViewModels.HomeViewModel>();
+
+            if (homeVm != null && navItems.Count > 0)
+            {
+                var targetNavItem = navItems[0].Id;
+                Console.WriteLine($"Navigating HomeViewModel to '{targetNavItem}'...");
+                homeVm.SelectNavSection(targetNavItem);
+                Console.WriteLine($"HomeViewModel state: SelectedNavSection={homeVm.SelectedNavSection}, IsFullViewportActive={homeVm.IsFullViewportActive}, IsPluginsWorkspaceActive={homeVm.IsPluginsWorkspaceActive}, DynamicFullViewportPageView={homeVm.DynamicFullViewportPageView?.GetType().FullName ?? "null"}");
+                var homeView = new PdfEditorApp.Views.HomeView { DataContext = homeVm };
+                var homeSnapshotPath = Snapshot.RenderAndSave(homeView, 1400, 900, $"{plugin.Id}_insitu_homeview");
+                Console.WriteLine($"Saved In-Situ HomeView snapshot: {homeSnapshotPath}");
+            }
+
+            if (mainVm != null && overlays.Count > 0)
+            {
+                var targetOverlayId = overlays[0].Id;
+                Console.WriteLine($"Showing Overlay '{targetOverlayId}' in OverlayRegistry...");
+                overlayRegistry.ShowOverlay(targetOverlayId);
+                var activeCount = (overlayRegistry as PdfEditorApp.Services.Overlays.OverlayRegistry)?.ActiveOverlays.Count ?? 0;
+                Console.WriteLine($"OverlayRegistry ActiveOverlays count: {activeCount}");
+                var overlayHost = new PdfEditorApp.Views.Overlays.ShellOverlayHost { DataContext = mainVm };
+                var overlayHostSnapshotPath = Snapshot.RenderAndSave(overlayHost, 1400, 900, $"{plugin.Id}_insitu_overlayhost");
+                Console.WriteLine($"Saved In-Situ ShellOverlayHost snapshot: {overlayHostSnapshotPath}");
+            }
         }
 
         Console.WriteLine("\n[DONE] Plugin loading and UI verification completed successfully.");
