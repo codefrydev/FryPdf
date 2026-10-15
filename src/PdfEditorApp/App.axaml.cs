@@ -90,6 +90,10 @@ public partial class App : Application
             };
             desktop.ShutdownRequested += (_, _) => ShutdownServices();
 
+            // FryWorld.Sdk plugins load in the background once the window exists; the bridge shows them as they mount.
+            Services.GetRequiredService<PdfEditorApp.Plugins.FryWorldBridge.FryWorldPluginBridge>().Attach();
+            Services.GetRequiredService<FryWorld.Sdk.Hosting.PluginStartup>().Start();
+
             // Reports any stall on the UI thread, whatever its cause. The per-operation
             // stopwatches elsewhere all stop before Avalonia's layout/render pass, so this is
             // the only thing that can see a freeze that happens during rendering.
@@ -354,6 +358,20 @@ public partial class App : Application
         services.AddSingleton<PdfEditorApp.Core.Plugins.Descriptors.IOverlayRegistry>(sp => sp.GetRequiredService<PdfEditorApp.Services.Overlays.OverlayRegistry>());
         services.AddSingleton<PdfEditorApp.Services.Shortcuts.ShortcutRegistry>();
         services.AddSingleton<PdfEditorApp.Core.Plugins.Descriptors.IShortcutRegistry>(sp => sp.GetRequiredService<PdfEditorApp.Services.Shortcuts.ShortcutRegistry>());
+
+        // FryWorld.Sdk plugins, alongside FryPDF's own: their own plugin host, FryPDF's services in FryWorld's
+        // shape, and a bridge that shows what they register in FryPDF's registries (see Plugins/FryWorldBridge).
+        services.AddSingleton<FryWorld.Sdk.Services.IShellService, PdfEditorApp.Plugins.FryWorldBridge.FryPdfShellService>();
+        services.AddSingleton<FryWorld.Sdk.Services.ISettingsManager, PdfEditorApp.Plugins.FryWorldBridge.FryPdfSettingsAdapter>();
+        services.AddSingleton<FryWorld.Sdk.Services.IThemeService, PdfEditorApp.Plugins.FryWorldBridge.FryPdfThemeAdapter>();
+        services.AddFryWorldPluginHost(o =>
+        {
+            o.PluginsDirectory = FryPdfPaths.FryWorldPluginsDirectory;
+            o.HostVersion = typeof(App).Assembly.GetName().Version;
+            o.Host.Logger = new PdfEditorApp.Plugins.FryWorldBridge.FryPdfLogger("FryWorldPlugins");
+            o.Host.EventSynchronizationContext = new PdfEditorApp.Plugins.FryWorldBridge.UiThreadSynchronizationContext();
+        });
+        services.AddSingleton<PdfEditorApp.Plugins.FryWorldBridge.FryWorldPluginBridge>();
         services.AddSingleton<PdfEditorApp.Core.Plugins.Settings.IPluginSettingsStore, PdfEditorApp.Core.Plugins.Settings.FilePluginSettingsStore>();
         services.AddSingleton<PdfEditorApp.Core.Plugins.Loading.ILoadingProgressService, PdfEditorApp.Core.Plugins.Loading.LoadingProgressService>();
         services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);

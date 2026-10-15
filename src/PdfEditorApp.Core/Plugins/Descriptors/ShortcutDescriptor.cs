@@ -45,7 +45,7 @@ public class ShortcutDescriptor
 
     /// <summary>
     /// Matching workspace/page ID when <see cref="Scope"/> is <see cref="ShortcutScope.Workspace"/> or <see cref="ShortcutScope.Context"/>
-    /// (e.g. "CSharpStudio", "CSharpNotebook", "PdfEditor", "PdfViewer").
+    /// (e.g. "PdfEditor", "PdfViewer").
     /// </summary>
     public string? ContextId { get; init; }
 

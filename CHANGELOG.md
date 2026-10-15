@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+- **Hosts FryWorld.Sdk plugins** next to FryPDF's own, through a second plugin host and a bridge (`Plugins/FryWorldBridge`).
+  - **Placement:** their pages, overlays, commands, sidebars, inspectors, dialogs, shortcuts and ribbon tabs appear in FryPDF's UI, and are removed when they unmount.
+  - **Services:** they get FryPDF's shell (`IShellService`), settings and theme in FryWorld's shape.
+  - **Install location:** they go in the new `fryworld-plugins` folder.
+- **FryPdf.PluginSdk 0.2.0:**
+  - It references FryWorld.Sdk.
+  - Scoped extensions in `PdfEditorApp.Core.Plugins.FryWorldInterop` (`RegisterDocumentImporter`, `RegisterDocumentExporter`, `RegisterTemplate`, `RegisterOcrEngine`, `RegisterDataConnector`, `RegisterCanvasElement`, `IsFryPdfHost`) let FryWorld plugins use FryPDF's PDF features.
+  - Its build targets keep `PdfEditorApp.Core.dll` out of FryWorld plugin packages.
+
+### Removed
+- **External plugins:** FryPDF no longer ships or offers any of them (Snake, Music Player, Chess, Scratchpad, Image Editor, C# Code Studio, Telemetry HUD, Tic-Tac-Toe). They are FryWorld.Sdk plugins now, and FryPDF runs them from `fryworld-plugins`.
+- **Store:** their FryPDF builds are filtered out of the catalog, including catalogs cached before this release, and so are FryWorld-only builds that FryPDF's installer cannot load. Copies users already installed are left in place.
+- **Examples and docs:** the `examples/` plugin projects and the Tic-Tac-Toe tutorial (`docs/TIC_TAC_TOE_EXAMPLE.md`) are gone.
+
 ## [0.1.2] - 2026-10-12
 
 ### Added

@@ -45,6 +45,31 @@ public class PluginMarketplaceService : IPluginMarketplaceService, IDisposable
     /// </summary>
     private static readonly List<MarketplacePluginItem> CuratedExtensions = new();
 
+    /// <summary>
+    /// Plugins FryPDF no longer offers. They are FryWorld.Sdk plugins now (Snake, Music Player, Chess, Scratchpad,
+    /// Image Editor, C# Code Studio, Telemetry HUD, Tic-Tac-Toe); FryPDF runs those from its fryworld-plugins folder
+    /// instead. Filtered out of the remote catalog and of catalogs cached on disk before they were retired.
+    /// </summary>
+    private static readonly HashSet<string> RetiredPluginIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "frypdf.overlay.snake",
+        "frypdf.overlay.musicplayer",
+        "frypdf.overlay.scratchpad",
+        "frypdf.overlay.imageeditor",
+        "com.frypdf.plugin.chess",
+        "com.frypdf.plugin.csharpeditor",
+        "frypdf.overlay.telemetry",
+        "com.frypdf.plugin.tictactoe"
+    };
+
+    /// <summary>
+    /// Whether FryPDF's own installer can offer <paramref name="item"/>: not retired, and not built for FryWorld.Sdk
+    /// (the store lists those for FryWorld; FryPDF's plugin loader cannot load them).
+    /// </summary>
+    internal static bool IsOfferedByFryPdf(MarketplacePluginItem item) =>
+        !RetiredPluginIds.Contains(item.Id) &&
+        !(item.Dependencies?.Any(d => d != null && d.TrimStart().StartsWith("FryWorld.Sdk", StringComparison.OrdinalIgnoreCase)) ?? false);
+
     public PluginMarketplaceService(
         PluginHost? pluginHost = null,
         IOverlayRegistry? overlayRegistry = null,
@@ -138,7 +163,7 @@ public class PluginMarketplaceService : IPluginMarketplaceService, IDisposable
                     lock (_catalogLock)
                     {
                         _remoteExtensions.Clear();
-                        _remoteExtensions.AddRange(cached.Where(c => c != null && !string.IsNullOrEmpty(c.Id)));
+                        _remoteExtensions.AddRange(cached.Where(c => c != null && !string.IsNullOrEmpty(c.Id) && IsOfferedByFryPdf(c)));
                     }
                 }
             }
@@ -435,7 +460,10 @@ public class PluginMarketplaceService : IPluginMarketplaceService, IDisposable
                     {
                         lock (_catalogLock)
                         {
-                            foreach (var item in items.Where(i => i != null && !string.IsNullOrEmpty(i.Id)))
+                            // Drop entries cached before they were retired, so the saved cache forgets them too.
+                            _remoteExtensions.RemoveAll(e => e == null || !IsOfferedByFryPdf(e));
+
+                            foreach (var item in items.Where(i => i != null && !string.IsNullOrEmpty(i.Id) && IsOfferedByFryPdf(i)))
                             {
                                 var existing = _remoteExtensions.FirstOrDefault(e => string.Equals(e?.Id, item.Id, StringComparison.OrdinalIgnoreCase));
                                 if (existing != null)
@@ -840,7 +868,7 @@ public class PluginMarketplaceService : IPluginMarketplaceService, IDisposable
             }
         }
 
-        // Case B: Local/simulated installation for built-in plugins (Snake, Scratchpad, Telemetry)
+        // Case B: Local/simulated installation for catalog entries without a downloadable package
         await Task.Delay(100, ct);
 
         statusCallback?.Invoke($"Preparing {item.FormattedSize} package components...");

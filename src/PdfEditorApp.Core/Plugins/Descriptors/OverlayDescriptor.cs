@@ -15,7 +15,7 @@ public enum OverlayChromeMode
 
     /// <summary>
     /// Borderless / custom chrome where the view provides its own entire visual frame, header, and dragging physics.
-    /// Used for games, custom HUDs, or full-bleed graphics overlays (e.g. Retro Snake).
+    /// Used for games, custom HUDs, or full-bleed graphics overlays (e.g. a mini-game).
     /// </summary>
     CustomChrome = 1,
 

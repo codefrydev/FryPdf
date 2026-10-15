@@ -1262,7 +1262,6 @@ public partial class PluginsManagerViewModel : ViewModelBase
         ["frypdf.sidebar.inspector"] = new("UI & Extensions", "Context-sensitive property inspector for selected canvas elements.", "TuneVertical", "#4F46E5"),
         ["frypdf.dialog.plugins"] = new("UI & Extensions", "Fast-access modal dialog for quickly viewing installed extensions.", "WindowMaximize", "#7C3AED"),
         ["frypdf.statusbar.core"] = new("UI & Extensions", "Status bar telemetry showing page count, zoom level, and ALC memory.", "DockBottom", "#64748B"),
-        ["frypdf.overlay.snake"] = new("UI & Extensions", "Playable, draggable retro-arcade Snake game floating over the application canvas in the 'shell.overlay' slot.", "GamepadVariantOutline", "#10B981")
     };
 
     private static string InferCategory(IFryPlugin plugin)

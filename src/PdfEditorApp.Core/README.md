@@ -21,6 +21,32 @@ Plugins run in isolated, collectible `AssemblyLoadContext` sandboxes and can ext
 
 ---
 
+## Building new plugins? Use FryWorld.Sdk
+
+New plugins should be built on [FryWorld.Sdk](https://www.nuget.org/packages/FryWorld.Sdk), the plugin SDK shared by every Fry app. FryPDF hosts FryWorld.Sdk plugins next to its own, so one plugin runs in FryWorld, in FryPDF and as a standalone app. FryPDF shows its pages, overlays, commands, sidebars, inspectors, dialogs, shortcuts and ribbon tabs. Install it by dropping its `.fryplugin` into FryPDF's `fryworld-plugins` folder (beside `plugins`).
+
+To also use FryPDF's PDF features, reference this package as well and use the scoped extensions in `PdfEditorApp.Core.Plugins.FryWorldInterop`:
+
+```csharp
+using PdfEditorApp.Core.Plugins.FryWorldInterop;
+
+public override Task ApplyAsync(IFryPluginContext ctx, CancellationToken ct = default)  // FryWorld.Sdk context
+{
+    if (ctx.IsFryPdfHost())
+    {
+        ctx.RegisterDocumentImporter(new MarkdownImporter());   // removed again when the plugin unmounts
+        ctx.RegisterTemplate(new InvoiceTemplate());
+    }
+    return Task.CompletedTask;
+}
+```
+
+The extensions cover importers, exporters, templates, OCR engines, data connectors and canvas elements. This package's build targets keep `PdfEditorApp.Core.dll` out of the plugin's `.fryplugin`, because FryPDF provides it.
+
+Plugins built on this SDK's own `IFryPlugin` keep working unchanged.
+
+---
+
 ## Installation
 
 Add the SDK package to your plugin project via NuGet:

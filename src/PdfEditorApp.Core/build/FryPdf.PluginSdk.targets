@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    FryWorld.Sdk plugins that use FryPDF's PDF features reference FryPdf.PluginSdk, but FryPDF provides
+    PdfEditorApp.Core.dll at run time: a second copy inside the plugin's package would give the plugin its own,
+    incompatible IDocumentImporter, ITemplateDescriptor and other types. Leave it out of the .fryplugin.
+  -->
+  <ItemGroup>
+    <FryPluginExclude Include="PdfEditorApp.Core.dll" />
+  </ItemGroup>
+</Project>

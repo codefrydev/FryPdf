@@ -614,20 +614,6 @@ public partial class PluginsManagerDetailViewModel : ViewModelBase
             return true;
         }
 
-        // 2. Known overlay extensions (Chess, Tic-Tac-Toe, Snake, etc.)
-        if (id.Equals("com.frypdf.plugin.chess", StringComparison.OrdinalIgnoreCase) ||
-            id.Equals("com.frypdf.plugin.tictactoe", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("chess", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("snake", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("tictactoe", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("musicplayer", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("scratchpad", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("telemetry", StringComparison.OrdinalIgnoreCase) ||
-            id.Contains("imageeditor", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
         // 3. Tags (e.g. overlay, game, arcade, hud)
         if (tags != null && tags.Any(t =>
             t.Equals("overlay", StringComparison.OrdinalIgnoreCase) ||

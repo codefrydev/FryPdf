@@ -84,8 +84,6 @@ Ensure fallback strings match the new version:
   ```xml
   <PackageReference Include="FryPdf.PluginSdk" Version="X.Y.Z" PrivateAssets="all" />
   ```
-- **[`examples/TicTacToePlugin/TicTacToePlugin.csproj`](../examples/TicTacToePlugin/TicTacToePlugin.csproj)**:
-  Update the example reference comment to `X.Y.Z`.
 
 ---
 

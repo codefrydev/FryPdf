@@ -390,7 +390,7 @@ public class QualityAndBugFixTests
             }
         });
 
-        // Register external plugin widget (e.g. Snake/TicTacToe/ImageEditor, should be filtered out)
+        // Register an external plugin widget (should be filtered out)
         registry.RegisterWidget(new PdfEditorApp.Core.Plugins.Descriptors.StatusBarWidgetDescriptor
         {
             WidgetId = "frypdf.overlay.imageeditor",

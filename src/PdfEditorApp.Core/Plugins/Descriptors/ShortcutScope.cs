@@ -13,7 +13,7 @@ public enum ShortcutScope
 
     /// <summary>
     /// Active when a specific workspace or page is currently visible (matching <see cref="ShortcutDescriptor.ContextId"/>).
-    /// Example: Save C# Script (Ctrl+S) in CSharpStudio vs Save PDF Project (Ctrl+S) in PdfEditor.
+    /// Example: Save Annotation (Ctrl+S) in PdfViewer vs Save PDF Project (Ctrl+S) in PdfEditor.
     /// </summary>
     Workspace,
 

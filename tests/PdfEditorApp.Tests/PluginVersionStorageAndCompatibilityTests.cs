@@ -78,20 +78,20 @@ public class PluginVersionStorageAndCompatibilityTests
         try
         {
             // Valid ID and Version
-            var dir = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.chess", "1.2.0", "test context");
-            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.chess", "1.2.0"), dir);
+            var dir = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.sample", "1.2.0", "test context");
+            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.sample", "1.2.0"), dir);
 
             // Strips leading 'v'
-            var dir2 = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.chess", "v1.2.0", "test context");
-            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.chess", "1.2.0"), dir2);
+            var dir2 = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.sample", "v1.2.0", "test context");
+            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.sample", "1.2.0"), dir2);
 
             // Null/empty version falls back to unversioned root
-            var dirUnversioned = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.chess", null, "test context");
-            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.chess"), dirUnversioned);
+            var dirUnversioned = PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.sample", null, "test context");
+            Assert.Equal(Path.Combine(tempRoot, "com.frypdf.plugin.sample"), dirUnversioned);
 
             // Rejects path traversal in version
             Assert.Throws<ArgumentException>(() =>
-                PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.chess", "../../../etc", "test context"));
+                PluginIdValidator.ResolveInstallDirectory(tempRoot, "com.frypdf.plugin.sample", "../../../etc", "test context"));
         }
         finally
         {

@@ -33,12 +33,11 @@
         <ItemsControl.ItemTemplate>
             <DataTemplate DataType="vm:OverlayInstanceViewModel" x:DataType="vm:OverlayInstanceViewModel">
                 <Panel PointerPressed="OnOverlayPointerPressed">
-                    <!-- 1. CUSTOM CHROME (Snake game, immersive canvas, full-bleed views) -->
+                    <!-- 1. CUSTOM CHROME (games, immersive canvas, full-bleed views) -->
                     <ContentControl Content="{Binding CustomChromeContent}"
                                     IsVisible="{Binding HasCustomChrome}" />
 
-                    <!-- 2. STANDARD M3 CARD CHROME (Utilities, Scratchpad, Telemetry, Forms) -->
-                    <!-- 2. STANDARD M3 CARD CHROME (Utilities, Scratchpad, Telemetry, Forms, Music Player) -->
+                    <!-- 2. STANDARD M3 CARD CHROME (utilities, telemetry, forms) -->
                     <Border IsVisible="{Binding HasStandardChrome}"
                             Background="{DynamicResource M3SurfaceContainerHighBrush}"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"

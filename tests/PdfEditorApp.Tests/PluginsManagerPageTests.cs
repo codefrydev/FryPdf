@@ -17,12 +17,13 @@ namespace PdfEditorApp.Tests;
 
 public class PluginsManagerPageTests
 {
-    private ServiceProvider CreateTestServices(string? testDir = null)
+    private ServiceProvider CreateTestServices(string? testDir = null, HttpClient? httpClient = null)
     {
         var services = new ServiceCollection();
         App.ConfigureServices(services);
-        if (testDir != null)
+        if (testDir != null || httpClient != null)
         {
+            testDir ??= Path.Combine(AppContext.BaseDirectory, $"frypdf_pm_{Guid.NewGuid():N}");
             var storePath = Path.Combine(testDir, "installed_plugins.json");
             services.AddSingleton<IInstalledPluginStore>(new FileInstalledPluginStore(storePath));
             services.AddSingleton<IPluginMarketplaceService>(sp =>
@@ -31,7 +32,9 @@ public class PluginsManagerPageTests
                 var overlay = sp.GetService<IOverlayRegistry>();
                 var store = sp.GetRequiredService<IInstalledPluginStore>();
                 var pluginsDir = Path.Combine(testDir, "plugins");
-                return new PluginMarketplaceService(host, overlay, store, null, null, pluginsDir);
+                return httpClient == null
+                    ? new PluginMarketplaceService(host, overlay, store, null, null, pluginsDir)
+                    : new PluginMarketplaceService(host, overlay, store, httpClient, PluginMarketplaceService.DefaultRegistryBaseUrl, pluginsDir);
             });
         }
         return services.BuildServiceProvider();
@@ -105,23 +108,18 @@ public class PluginsManagerPageTests
         vm.SearchQuery = "";
         Assert.Equal(13, vm.FilteredInstalledPlugins.Count);
 
-        // 3. Switch to Marketplace Tab & Search
+        // 3. Switch to Marketplace Tab: the external plugins FryPDF used to offer are FryWorld plugins now, so neither
+        // FryPDF's retired builds nor the store's FryWorld builds are offered here.
         vm.SelectedTab = PluginsManagerTab.Marketplace;
-        Assert.NotEmpty(vm.FilteredMarketplacePlugins);
-
-        vm.SearchQuery = "Snake";
-        Assert.Single(vm.FilteredMarketplacePlugins);
-        Assert.Equal("frypdf.overlay.snake", vm.FilteredMarketplacePlugins[0].Id);
-
-        vm.SearchQuery = "Arcade";
-        Assert.True(vm.FilteredMarketplacePlugins.Count >= 2);
-        Assert.Contains(vm.FilteredMarketplacePlugins, m => m.Id == "frypdf.overlay.snake");
-        Assert.Contains(vm.FilteredMarketplacePlugins, m => m.Id == "com.frypdf.plugin.tictactoe");
-
-        // 4. Filter by Category
+        foreach (var query in new[] { "Snake", "Chess", "Music", "Scratchpad", "Image", "C#", "Telemetry", "Tic" })
+        {
+            vm.SearchQuery = query;
+            Assert.DoesNotContain(vm.FilteredMarketplacePlugins, m =>
+                m.Id.StartsWith("com.fryworld.", StringComparison.OrdinalIgnoreCase) ||
+                m.Id.StartsWith("frypdf.overlay.", StringComparison.OrdinalIgnoreCase) ||
+                m.Id is "com.frypdf.plugin.chess" or "com.frypdf.plugin.csharpeditor" or "com.frypdf.plugin.tictactoe");
+        }
         vm.SearchQuery = "";
-        vm.SelectedCategory = "UI & Extensions";
-        Assert.Contains(vm.FilteredMarketplacePlugins, m => m.Id == "frypdf.overlay.snake");
 
         await host.StopAsync();
     }
@@ -169,7 +167,8 @@ public class PluginsManagerPageTests
     [Fact]
     public async Task PluginsManager_DefaultTabIsStore_AndButtonsReflectStateAccurately()
     {
-        var sp = CreateTestServices();
+        using var httpClient = new HttpClient(new StubCatalogHandler()) { Timeout = TimeSpan.FromSeconds(5) };
+        var sp = CreateTestServices(httpClient: httpClient);
         var host = sp.GetRequiredService<PluginHost>();
         var bundles = new IFryPluginBundle[] { new ToolsOrganizeBundle() };
         var profile = new PluginProfile { ProfileName = "desktop", Bundles = bundles.Select(b => b.Id).ToList() };
@@ -220,15 +219,16 @@ public class PluginsManagerPageTests
         Directory.CreateDirectory(tempDir);
         try
         {
-            var sp = CreateTestServices(tempDir);
+            using var httpClient = new HttpClient(new StubCatalogHandler()) { Timeout = TimeSpan.FromSeconds(5) };
+            var sp = CreateTestServices(tempDir, httpClient);
             var host = sp.GetRequiredService<PluginHost>();
             var marketplace = sp.GetRequiredService<IPluginMarketplaceService>();
 
             var vm = new PluginsManagerViewModel(host, marketplace);
             await vm.LoadAllDataAsync();
 
-            var snake = vm.FilteredMarketplacePlugins.ToList().First(m => m.Id == "frypdf.overlay.snake");
-            vm.SelectedMarketplacePlugin = snake;
+            var sample = vm.FilteredMarketplacePlugins.ToList().First(m => m.Id == StubCatalogHandler.SampleId);
+            vm.SelectedMarketplacePlugin = sample;
 
             // Before install
             Assert.False(vm.IsInstalling);
@@ -236,21 +236,21 @@ public class PluginsManagerPageTests
             Assert.False(vm.SelectedDetail!.IsInstalling);
 
             // Trigger install command
-            var installTask = vm.InstallMarketplacePluginCommand.ExecuteAsync("frypdf.overlay.snake");
+            var installTask = vm.InstallMarketplacePluginCommand.ExecuteAsync(StubCatalogHandler.SampleId);
             await installTask;
 
             // After install finishes
             Assert.False(vm.IsInstalling);
-            Assert.True(marketplace.IsPluginInstalled("frypdf.overlay.snake"));
+            Assert.True(marketplace.IsPluginInstalled(StubCatalogHandler.SampleId));
 
-            // Re-select installed Snake in marketplace
-            vm.SelectedMarketplacePlugin = vm.FilteredMarketplacePlugins.ToList().First(m => m.Id == "frypdf.overlay.snake");
+            // Re-select the installed sample in the marketplace
+            vm.SelectedMarketplacePlugin = vm.FilteredMarketplacePlugins.ToList().First(m => m.Id == StubCatalogHandler.SampleId);
             var detail = vm.SelectedDetail!;
             Assert.True(detail.IsInstalled);
             Assert.True(detail.IsExternal);
             Assert.True(detail.CanUninstall); // External installed items CAN be uninstalled
 
-            await marketplace.UninstallPluginAsync("frypdf.overlay.snake");
+            await marketplace.UninstallPluginAsync(StubCatalogHandler.SampleId);
         }
         finally
         {
@@ -258,49 +258,6 @@ public class PluginsManagerPageTests
         }
     }
 
-    [Fact]
-    public async Task PluginsManager_Marketplace_InstallsAndMountsRealPluginIntoHost()
-    {
-        var tempDir = Path.Combine(AppContext.BaseDirectory, $"frypdf_pm_test_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        try
-        {
-            var sp = CreateTestServices(tempDir);
-            var host = sp.GetRequiredService<PluginHost>();
-            var marketplace = sp.GetRequiredService<IPluginMarketplaceService>();
-
-            var vm = new PluginsManagerViewModel(host, marketplace);
-            await vm.LoadAllDataAsync();
-
-            vm.SelectedTab = PluginsManagerTab.Marketplace;
-            var snakeItem = vm.FilteredMarketplacePlugins.First(m => m.Id == "frypdf.overlay.snake");
-            vm.SelectedMarketplacePlugin = snakeItem;
-
-            Assert.NotNull(vm.SelectedDetail);
-            Assert.Equal("frypdf.overlay.snake", vm.SelectedDetail.Id);
-            Assert.Equal("FryPDF Team", vm.SelectedDetail.Publisher);
-            Assert.True(vm.SelectedDetail.IsOfficial);
-            Assert.True(vm.SelectedDetail.IsVerified);
-
-            // Verify initially not active in host
-            Assert.False(host.IsPluginActive("frypdf.overlay.snake"));
-
-            // Perform 1-click install: mounts real SnakeGamePlugin into PluginHost and activates it!
-            await vm.InstallMarketplacePluginCommand.ExecuteAsync("frypdf.overlay.snake");
-
-            Assert.True(marketplace.IsPluginInstalled("frypdf.overlay.snake"));
-            Assert.True(host.IsPluginActive("frypdf.overlay.snake"));
-
-            // Clean up: uninstalls and disables from host
-            await marketplace.UninstallPluginAsync("frypdf.overlay.snake");
-            Assert.False(marketplace.IsPluginInstalled("frypdf.overlay.snake"));
-            Assert.False(host.IsPluginActive("frypdf.overlay.snake"));
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-        }
-    }
 
     [Fact]
     public async Task WorkspacePagesBundle_RegistersPluginsPageDescriptorCorrectly()
@@ -341,10 +298,7 @@ public class PluginsManagerPageTests
     public void PluginsManagerDetail_OverlayTypeDetection_And_LaunchCommand_WorkAsExpected()
     {
         // 1. Overlay detection by ID, tags, and known plugins
-        Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("com.frypdf.plugin.chess"));
-        Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("frypdf.overlay.snake"));
-        Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("frypdf.overlay.scratchpad"));
-        Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("com.frypdf.plugin.tictactoe"));
+        Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("com.example.overlay.widget"));
         Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("custom.plugin", tags: new[] { "overlay", "utility" }));
         Assert.True(PluginsManagerDetailViewModel.DetermineIsOverlayType("custom.plugin", features: new[] { "Shell Overlay: Floating Card" }));
 
@@ -355,13 +309,13 @@ public class PluginsManagerPageTests
         // 2. CanLaunch flag logic
         var installedOverlay = new MarketplacePluginItem
         {
-            Id = "com.frypdf.plugin.chess",
-            Name = "Chess",
+            Id = "com.example.sample",
+            Name = "Sample Overlay",
             Publisher = "Code Fry Dev",
             Version = "1.0.0",
-            Description = "Interactive Chess shell overlay",
+            Description = "Sample shell overlay",
             Category = "UI & Extensions",
-            Tags = new[] { "game", "chess", "overlay" },
+            Tags = new[] { "game", "sample", "overlay" },
             Status = MarketplacePluginStatus.Installed
         };
 
@@ -386,6 +340,26 @@ public class PluginsManagerPageTests
         };
 
         detailVm.LaunchCommand.Execute(null);
-        Assert.Equal("com.frypdf.plugin.chess", launchedId);
+        Assert.Equal("com.example.sample", launchedId);
+    }
+
+    /// <summary>
+    /// Serves a one-entry catalog with an external FryPDF plugin that has no downloadable package, so install goes
+    /// through the local install path without reaching the network.
+    /// </summary>
+    private sealed class StubCatalogHandler : HttpMessageHandler
+    {
+        public const string SampleId = "com.frypdf.test.sample";
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(request.RequestUri!.ToString().EndsWith("catalog.json", StringComparison.OrdinalIgnoreCase)
+                ? new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent($$"""
+                        [ { "id": "{{SampleId}}", "name": "Sample Extension", "publisher": "Code Fry Dev", "version": "1.0.0",
+                            "category": "UI & Extensions", "description": "Stub catalog entry for tests.", "formattedSize": "10 KB" } ]
+                        """, System.Text.Encoding.UTF8, "application/json")
+                }
+                : new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
     }
 }

@@ -19,6 +19,7 @@ namespace PdfEditorApp.Services;
 public static class FryPdfPaths
 {
     private static string? _pluginsDirectory;
+    private static string? _fryWorldPluginsDirectory;
     private static string? _dataDirectory;
     private static string? _profilesDirectory;
     private static string? _logsDirectory;
@@ -26,6 +27,12 @@ public static class FryPdfPaths
 
     /// <summary>Writable directory for user-installed external plugins.</summary>
     public static string PluginsDirectory => _pluginsDirectory ??= ResolveWritableDir("plugins");
+
+    /// <summary>
+    /// Writable directory for plugins built on FryWorld.Sdk. Kept apart from <see cref="PluginsDirectory"/> so FryPDF's
+    /// own plugin loader and FryWorld's never process each other's packages.
+    /// </summary>
+    public static string FryWorldPluginsDirectory => _fryWorldPluginsDirectory ??= ResolveWritableDir("fryworld-plugins");
 
     /// <summary>Writable directory for persistent app data (installed_plugins.json, catalog cache, etc.).</summary>
     public static string DataDirectory => _dataDirectory ??= ResolveWritableDir("data");

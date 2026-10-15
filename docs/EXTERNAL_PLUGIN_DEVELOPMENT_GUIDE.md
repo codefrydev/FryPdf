@@ -3,6 +3,8 @@
 > **Authoritative Guide & Developer Manual**  
 > Learn how to build, test, package, and distribute third-party plugins for **FryPDF** using **.NET 10, C# 13, and Avalonia UI (Material Design 3 Expressive)**.
 
+> **Building a new external plugin?** Build it on [FryWorld.Sdk](https://www.nuget.org/packages/FryWorld.Sdk) instead. FryPDF hosts FryWorld.Sdk plugins (install them in its `fryworld-plugins` folder), and the same plugin also runs in FryWorld and on its own. FryPDF's former external plugins (Snake, Music Player, Chess, Scratchpad, Image Editor, C# Code Studio, Telemetry HUD, Tic-Tac-Toe) have moved there. This guide still describes FryPDF's own plugin runtime, which FryPDF's built-in features use and which keeps running existing plugins.
+
 ---
 
 ## 1. Overview & Architectural Foundation
@@ -1148,6 +1150,5 @@ With FryPDF's modular microkernel architecture, creating professional external p
 
 For in-depth details on internal pipeline mechanics, DAG solvers, and core architecture, see:
 - [Plugin-Based Architecture Manual (`PLUGIN_BASED_ARCHITECTURE.md`)](PLUGIN_BASED_ARCHITECTURE.md)
-- [Complete Tic-Tac-Toe Reference Plugin Guide (`TIC_TAC_TOE_EXAMPLE.md`)](TIC_TAC_TOE_EXAMPLE.md) (Source: [`docs/examples/TicTacToePlugin/`](examples/TicTacToePlugin))
 - [Material Design 3 Expressive Guidelines (`MATERIAL_DESIGN_3_EXPRESSIVE_GUIDELINES.md`)](MATERIAL_DESIGN_3_EXPRESSIVE_GUIDELINES.md)
 - [PDF Deconstruction and Vector Editing (`PDF_DECONSTRUCTION_AND_EDITING.md`)](PDF_DECONSTRUCTION_AND_EDITING.md)

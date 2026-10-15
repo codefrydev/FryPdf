@@ -8,7 +8,7 @@
     <RootNamespace>PdfEditorApp.Core</RootNamespace>
     <PackageId Condition="'$(PackageId)' == ''">FryPdf.PluginSdk</PackageId>
     <Title>FryPDF Plugin SDK</Title>
-    <Version Condition="'$(Version)' == ''">0.1.2</Version>
+    <Version Condition="'$(Version)' == ''">0.2.0</Version>
     <!--
       Plugin ABI version. This assembly is the plugin contract: external plugins compile against it
       and never ship it, so its identity must NOT move with the application's release version —
@@ -42,6 +42,8 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <!-- Keeps this assembly out of FryWorld plugins' .fryplugin packages: FryPDF provides it at run time. -->
+    <None Include="build\FryPdf.PluginSdk.targets" Pack="true" PackagePath="build\" />
     <None Include="..\PdfEditorApp\Assets\app-logo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
@@ -57,5 +59,7 @@
     <PackageReference Include="Tabula" />
     <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <!-- PDF features (importers, exporters, templates, OCR, data connectors, canvas elements) for FryWorld.Sdk plugins. -->
+    <PackageReference Include="FryWorld.Sdk" />
   </ItemGroup>
 </Project>

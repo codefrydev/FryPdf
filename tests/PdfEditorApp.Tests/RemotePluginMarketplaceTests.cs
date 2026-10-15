@@ -110,19 +110,19 @@ public class RemotePluginMarketplaceTests : IDisposable
 
         var remoteItems = await marketplace.FetchRemoteCatalogAsync(forceRefresh: true);
 
-        var ticTacToe = remoteItems.SingleOrDefault(i => i.Id == "com.frypdf.plugin.tictactoe");
-        Assert.NotNull(ticTacToe);
-        Assert.Equal("Tic-Tac-Toe", ticTacToe!.Name);
-        Assert.Equal("Code Fry Dev", ticTacToe.Publisher);
-        Assert.Equal("UI & Extensions", ticTacToe.Category);
-        Assert.StartsWith("https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/", ticTacToe.DownloadUrl);
-        Assert.Contains("tictactoe", ticTacToe.Tags);
+        var sample = remoteItems.SingleOrDefault(i => i.Id == "com.frypdf.plugin.sample");
+        Assert.NotNull(sample);
+        Assert.Equal("Sample Overlay", sample!.Name);
+        Assert.Equal("Code Fry Dev", sample.Publisher);
+        Assert.Equal("UI & Extensions", sample.Category);
+        Assert.StartsWith("https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/", sample.DownloadUrl);
+        Assert.Contains("sample", sample.Tags);
 
         // Fields the schema leaves optional must fall back to the model's defaults.
-        var snake = remoteItems.SingleOrDefault(i => i.Id == "frypdf.overlay.snake");
-        Assert.NotNull(snake);
-        Assert.Equal("General", snake!.Category);
-        Assert.Empty(snake.Tags);
+        var minimal = remoteItems.SingleOrDefault(i => i.Id == "com.frypdf.plugin.minimal");
+        Assert.NotNull(minimal);
+        Assert.Equal("General", minimal!.Category);
+        Assert.Empty(minimal.Tags);
 
         var fullCatalog = await marketplace.GetCatalogAsync();
         Assert.NotEmpty(fullCatalog);
@@ -136,24 +136,58 @@ public class RemotePluginMarketplaceTests : IDisposable
     private const string OfficialCatalogFixture = """
 [
   {
-    "id": "com.frypdf.plugin.tictactoe",
-    "name": "Tic-Tac-Toe",
+    "id": "com.frypdf.plugin.sample",
+    "name": "Sample Overlay",
     "publisher": "Code Fry Dev",
     "version": "1.0.0",
     "category": "UI & Extensions",
-    "description": "Interactive floating Tic-Tac-Toe mini-game.",
-    "tags": [ "game", "tictactoe", "overlay" ],
-    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.tictactoe/TicTacToe.fryplugin",
+    "description": "A sample floating overlay.",
+    "tags": [ "sample", "overlay" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.sample/Sample.fryplugin",
     "formattedSize": "51 KB"
   },
   {
-    "id": "frypdf.overlay.snake",
-    "name": "Retro Arcade Snake Game",
+    "id": "com.frypdf.plugin.minimal",
+    "name": "Minimal Plugin",
     "publisher": "Code Fry Dev",
     "version": "1.0.0",
-    "description": "Classic snake, rendered as a floating overlay.",
-    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/frypdf.overlay.snake/Snake.fryplugin"
+    "description": "Omits every optional field.",
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.minimal/Minimal.fryplugin"
   }
+]
+""";
+
+    [Fact]
+    public async Task FetchRemoteCatalogAsync_DoesNotOfferRetiredOrFryWorldPlugins()
+    {
+        // FryPDF's external plugins (Snake, Music Player, Chess, Scratchpad, Image Editor, C# Code Studio, Telemetry HUD,
+        // Tic-Tac-Toe) moved to FryWorld.Sdk; the store lists those builds for FryWorld, and FryPDF's own installer
+        // cannot load them.
+        var handler = new MockHttpMessageHandler(Array.Empty<byte>(), MixedCatalogFixture);
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        var sp = CreateTestServices(httpClient: httpClient, registryBaseUrl: PluginMarketplaceService.DefaultRegistryBaseUrl);
+        var marketplace = sp.GetRequiredService<IPluginMarketplaceService>();
+
+        var remoteItems = await marketplace.FetchRemoteCatalogAsync(forceRefresh: true);
+
+        Assert.Equal(new[] { "com.frypdf.plugin.sample" }, remoteItems.Select(i => i.Id));
+        Assert.DoesNotContain(await marketplace.GetCatalogAsync(), i => i.Id is "frypdf.overlay.snake" or "com.fryworld.snake");
+    }
+
+    private const string MixedCatalogFixture = """
+[
+  { "id": "com.frypdf.plugin.sample", "name": "Sample Overlay", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "PdfEditorApp.Core >= 1.0.0" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.sample/Sample.fryplugin" },
+  { "id": "com.frypdf.plugin.tictactoe", "name": "Tic-Tac-Toe", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "PdfEditorApp.Core >= 1.0.0" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.tictactoe/TicTacToe.fryplugin" },
+  { "id": "frypdf.overlay.telemetry", "name": "Document Telemetry HUD", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "PdfEditorApp.Core >= 1.0.0" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/frypdf.overlay.telemetry/Telemetry.fryplugin" },
+  { "id": "frypdf.overlay.snake", "name": "Retro Arcade Snake Game", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "PdfEditorApp.Core >= 1.0.0" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/frypdf.overlay.snake/Snake.fryplugin" },
+  { "id": "com.frypdf.plugin.csharpeditor", "name": "C# Code Studio", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "PdfEditorApp.Core >= 1.0.0" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.frypdf.plugin.csharpeditor/CSharpEditor.fryplugin" },
+  { "id": "com.fryworld.snake", "name": "Fry Snake", "publisher": "Code Fry Dev", "description": "Fixture entry.", "version": "1.0.0", "dependencies": [ "FryWorld.Sdk >= 0.0.2" ],
+    "downloadUrl": "https://raw.githubusercontent.com/codefrydev/PDFCreator-resources/refs/heads/main/plugins/com.fryworld.snake/Snake.fryplugin" }
 ]
 """;
 
@@ -272,52 +306,9 @@ public class RemotePluginMarketplaceTests : IDisposable
         }
     }
 
-    // Genuinely reaches the GitHub CDN, so it is opt-in: FRYPDF_LIVE_NETWORK_TESTS=1.
-    // It was previously a plain [Fact] wrapped in null checks, which meant that offline it
-    // passed while asserting nothing at all.
-    [LiveNetworkFact]
-    public async Task InstallPluginAsync_DownloadsRealPackageFromGitHubCdn_AndMountsSuccessfully()
-    {
-        var tempDir = Path.Combine(AppContext.BaseDirectory, $"frypdf_live_cdn_test_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-
-        try
-        {
-            var sp = CreateTestServices(testDir: tempDir);
-            var marketplace = sp.GetRequiredService<IPluginMarketplaceService>();
-            var host = sp.GetRequiredService<PluginHost>();
-            var overlayReg = sp.GetRequiredService<IOverlayRegistry>();
-
-            // Asserted unconditionally: opting in to this test is a statement that the CDN
-            // is expected to be reachable, so an empty catalog or a failed install is a
-            // real failure. The null/false guards this used to carry meant it reported
-            // success while doing nothing.
-            var catalog = await marketplace.FetchRemoteCatalogAsync(forceRefresh: true);
-            Assert.Contains(catalog, i => i.Id == "com.frypdf.plugin.tictactoe");
-
-            string lastStatus = "";
-            bool installed = await marketplace.InstallPluginAsync(
-                "com.frypdf.plugin.tictactoe", statusCallback: s => lastStatus = s);
-            Assert.True(installed, $"Live install failed with status: {lastStatus}");
-
-            Assert.True(marketplace.IsPluginInstalled("com.frypdf.plugin.tictactoe"));
-            Assert.True(host.IsPluginActive("com.frypdf.plugin.tictactoe"));
-            Assert.True(overlayReg.IsOverlayVisible("com.frypdf.plugin.tictactoe"));
-
-            // Clean uninstall
-            bool uninstalled = await marketplace.UninstallPluginAsync("com.frypdf.plugin.tictactoe");
-            Assert.True(uninstalled);
-            Assert.False(marketplace.IsPluginInstalled("com.frypdf.plugin.tictactoe"));
-            Assert.False(host.IsPluginActive("com.frypdf.plugin.tictactoe"));
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-        }
-    }
 
     [Fact]
-    public async Task PluginsManagerViewModel_Search_RanksTicTacToeFirst_WhenSearchingTic()
+    public async Task PluginsManagerViewModel_Search_RanksNamePrefixMatchFirst()
     {
         var mockHandler = new MockHttpMessageHandler(Array.Empty<byte>());
         using var httpClient = new HttpClient(mockHandler) { Timeout = TimeSpan.FromSeconds(5) };
@@ -330,12 +321,12 @@ public class RemotePluginMarketplaceTests : IDisposable
         await vm.LoadAllDataAsync();
 
         vm.SelectedTab = PdfEditorApp.ViewModels.PluginsManagerTab.Marketplace;
-        vm.SearchQuery = "tic";
+        vm.SearchQuery = "tile";
 
         Assert.NotEmpty(vm.FilteredMarketplacePlugins);
-        // Tic-Tac-Toe should be ranked at index 0 because its name starts with "tic"
-        Assert.Equal("com.frypdf.plugin.tictactoe", vm.FilteredMarketplacePlugins[0].Id);
-        Assert.Equal("Tic-Tac-Toe", vm.FilteredMarketplacePlugins[0].Name);
+        // Tile Board should be ranked at index 0 because its name starts with "tile"
+        Assert.Equal("com.frypdf.test.tiles", vm.FilteredMarketplacePlugins[0].Id);
+        Assert.Equal("Tile Board", vm.FilteredMarketplacePlugins[0].Name);
     }
 
     private class MockHttpMessageHandler : HttpMessageHandler
@@ -371,13 +362,13 @@ public class RemotePluginMarketplaceTests : IDisposable
     ""formattedSize"": ""25 KB""
   },
   {
-    ""id"": ""com.frypdf.plugin.tictactoe"",
-    ""name"": ""Tic-Tac-Toe"",
+    ""id"": ""com.frypdf.test.tiles"",
+    ""name"": ""Tile Board"",
     ""publisher"": ""Code Fry Dev"",
     ""version"": ""1.0.0"",
     ""category"": ""UI & Extensions"",
-    ""description"": ""Interactive floating Tic-Tac-Toe mini-game."",
-    ""downloadUrl"": ""https://mock.frypdf.dev/plugins/TicTacToe.fryplugin"",
+    ""description"": ""Floating tile puzzle overlay."",
+    ""downloadUrl"": ""https://mock.frypdf.dev/plugins/TileBoard.fryplugin"",
     ""formattedSize"": ""51 KB""
   }
 ]";
