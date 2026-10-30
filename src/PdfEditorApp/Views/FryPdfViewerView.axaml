@@ -798,10 +798,11 @@
                                                     <TextBlock Text="{Binding Label}" FontSize="{Binding FontSize}" Foreground="{DynamicResource WinTextBrush}" VerticalAlignment="Center" />
                                                 </StackPanel>
 
-                                                <!-- Fillable Input -->
+                                                <!-- Fillable Single-Line Input -->
                                                 <StackPanel Spacing="2"
                                                             IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Text}">
-                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}" />
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
                                                     <TextBox Text="{Binding Value, Mode=TwoWay}"
                                                              PlaceholderText="{Binding Placeholder}"
                                                              FontSize="{Binding FontSize}"
@@ -809,13 +810,81 @@
                                                              CornerRadius="{StaticResource M3ShapeCornerSmall}" />
                                                 </StackPanel>
 
+                                                <!-- Multiline Text Area -->
+                                                <StackPanel Spacing="2"
+                                                            IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=MultilineText}">
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <TextBox Text="{Binding Value, Mode=TwoWay}"
+                                                             PlaceholderText="{Binding Placeholder}"
+                                                             FontSize="{Binding FontSize}"
+                                                             AcceptsReturn="True"
+                                                             TextWrapping="Wrap"
+                                                             Height="50" Padding="6,4"
+                                                             CornerRadius="{StaticResource M3ShapeCornerSmall}" />
+                                                </StackPanel>
+
+                                                <!-- Dropdown List -->
+                                                <StackPanel Spacing="2"
+                                                            IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Dropdown}">
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <ComboBox ItemsSource="{Binding Options}"
+                                                              SelectedItem="{Binding Value, Mode=TwoWay}"
+                                                              PlaceholderText="{Binding Placeholder}"
+                                                              FontSize="{Binding FontSize}"
+                                                              HorizontalAlignment="Stretch"
+                                                              Height="28" CornerRadius="{StaticResource M3ShapeCornerSmall}" />
+                                                </StackPanel>
+
+                                                <!-- Date Picker -->
+                                                <StackPanel Spacing="2"
+                                                            IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=DatePicker}">
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <CalendarDatePicker SelectedDate="{Binding Value, Mode=TwoWay, Converter={StaticResource DateTimeFormatConverter}}"
+                                                                        PlaceholderText="{Binding Placeholder}"
+                                                                        FontSize="{Binding FontSize}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        Height="28" CornerRadius="{StaticResource M3ShapeCornerSmall}" />
+                                                </StackPanel>
+
+                                                <!-- Number / Currency -->
+                                                <StackPanel Spacing="2"
+                                                            IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Number}">
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <TextBox Text="{Binding Value, Mode=TwoWay}"
+                                                             PlaceholderText="{Binding Placeholder, FallbackValue='0.00'}"
+                                                             FontSize="{Binding FontSize}"
+                                                             Height="28" Padding="6,2"
+                                                             CornerRadius="{StaticResource M3ShapeCornerSmall}" />
+                                                </StackPanel>
+
+                                                <!-- Push Button Field -->
+                                                <Border Background="{DynamicResource M3PrimaryBrush}" CornerRadius="{StaticResource M3ShapeCornerFull}" Height="30" Padding="14,4" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Button}">
+                                                    <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                                </Border>
+
+                                                <!-- Signature Line Field -->
+                                                <Grid RowDefinitions="Auto,*,Auto"
+                                                      IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=SignatureLine}">
+                                                    <TextBlock Grid.Row="0" Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <Border Grid.Row="1" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="0,0,0,1.5" Margin="0,4,0,2">
+                                                        <TextBlock Text="{Binding Value, FallbackValue='[Authorized Signature Line]'}" FontSize="11" FontStyle="Italic" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <TextBlock Grid.Row="2" Text="Digitally Verified Identity" FontSize="8.5" Foreground="{DynamicResource WinSubtleBrush}" HorizontalAlignment="Right" />
+                                                </Grid>
+
                                                 <!-- Verified Digital Signature Badge -->
                                                 <Grid RowDefinitions="Auto,Auto"
                                                       IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Signature}"
                                                       VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                         <materialIcons:MaterialIcon Kind="DrawPen" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="Digitally Verified Document Signature" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding Value, FallbackValue='Digitally Verified Document Signature'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                                                     </StackPanel>
                                                     <Border Grid.Row="1" Margin="0,4,0,0" Background="{DynamicResource M3SuccessContainerBrush}" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="8,2" HorizontalAlignment="Left">
                                                         <TextBlock Text="✓ Certified Authentic · Tamper-evident" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3OnSuccessContainerBrush}" />

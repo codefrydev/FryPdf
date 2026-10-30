@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using PdfEditorApp.Core.Models;
+using PdfEditorApp.Services.Typography;
 using PdfEditorApp.ViewModels;
 using PdfEditorApp.ViewModels.ElementViewModels;
 
@@ -463,6 +464,16 @@ public partial class DocumentCanvasView : UserControl
                     FocusInPlaceTextBox(mathVm);
                 }, Avalonia.Threading.DispatcherPriority.Loaded);
             }
+            else if (targetElement is FormFieldElementViewModel formVm)
+            {
+                formVm.IsInEditMode = true;
+                e.Handled = true;
+
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    FocusInPlaceTextBox(formVm);
+                }, Avalonia.Threading.DispatcherPriority.Input);
+            }
         }
     }
 
@@ -645,6 +656,23 @@ public partial class DocumentCanvasView : UserControl
                     return;
                 }
 
+                // If user clicked directly on an interactive control inside a form field (CheckBox, TextBox, ComboBox, DatePicker, etc.),
+                // allow the native control to receive focus and interaction instead of capturing drag!
+                if (elementVm is FormFieldElementViewModel && e.Source is Visual visual)
+                {
+                    bool isInteractiveChild = visual is TextBox || visual.FindAncestorOfType<TextBox>() != null ||
+                                             visual is CheckBox || visual.FindAncestorOfType<CheckBox>() != null ||
+                                             visual is RadioButton || visual.FindAncestorOfType<RadioButton>() != null ||
+                                             visual is ComboBox || visual.FindAncestorOfType<ComboBox>() != null ||
+                                             visual is CalendarDatePicker || visual.FindAncestorOfType<CalendarDatePicker>() != null;
+
+                    if (isInteractiveChild)
+                    {
+                        elementVm.IsInEditMode = true;
+                        return;
+                    }
+                }
+
                 _isPotentialDrag = true;
                 _potentialDragElement = elementVm;
                 _potentialDragStartPos = e.GetPosition(PageElementsCanvas);
@@ -787,7 +815,7 @@ public partial class DocumentCanvasView : UserControl
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             textBox.Focus();
-            textBox.CaretIndex = textBox.Text?.Length ?? 0;
+            textBox.CaretIndex = 0;
             textBox.SelectAll();
             UpdateSelectionFromTextBox(textBox);
         }, Avalonia.Threading.DispatcherPriority.Input);
@@ -854,9 +882,14 @@ public partial class DocumentCanvasView : UserControl
         {
             if (textVm.IsLocked) return;
 
+            textVm.AutoFitHeight();
             if (textVm.Spans != null && textVm.Spans.Count > 0)
             {
                 textVm.Text = textVm.GetMarkdownText();
+            }
+            else
+            {
+                textVm.Text = RichTextHelper.StripExtendedTags(textVm.Text);
             }
 
             textVm.IsInEditMode = true;
@@ -1139,6 +1172,11 @@ public partial class DocumentCanvasView : UserControl
                 {
                     shapeVm.IsInEditMode = true;
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => FocusInPlaceTextBox(shapeVm), Avalonia.Threading.DispatcherPriority.Input);
+                }
+                else if (_potentialDragElement is FormFieldElementViewModel formVm)
+                {
+                    formVm.IsInEditMode = true;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => FocusInPlaceTextBox(formVm), Avalonia.Threading.DispatcherPriority.Input);
                 }
             }
         }
@@ -1445,6 +1483,59 @@ public partial class DocumentCanvasView : UserControl
                     return;
                 }
             }
+            else if (selected is FormFieldElementViewModel formEl && !formEl.IsInEditMode && !isCtrlOrCmd && !e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                bool isPrintable = (e.Key >= Key.A && e.Key <= Key.Z) ||
+                                   (e.Key >= Key.D0 && e.Key <= Key.D9) ||
+                                   (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9) ||
+                                   e.Key == Key.Space || e.Key == Key.Enter || e.Key == Key.F2 ||
+                                   e.Key == Key.OemPeriod || e.Key == Key.OemComma || e.Key == Key.OemMinus || e.Key == Key.OemPlus;
+
+                if (isPrintable)
+                {
+                    formEl.IsInEditMode = true;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => FocusInPlaceTextBox(formEl), Avalonia.Threading.DispatcherPriority.Input);
+
+                    if (e.Key == Key.Enter || e.Key == Key.F2)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                    return;
+                }
+            }
+
+            if (e.Key == Key.Tab && ViewModel?.CurrentPage != null)
+            {
+                var formFields = ViewModel.CurrentPage.Elements
+                    .OfType<FormFieldElementViewModel>()
+                    .OrderBy(f => f.TabIndex > 0 ? f.TabIndex : int.MaxValue)
+                    .ThenBy(f => f.Y)
+                    .ThenBy(f => f.X)
+                    .ToList();
+
+                if (formFields.Count > 0)
+                {
+                    bool isShift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+                    int curIdx = selected is FormFieldElementViewModel currentForm ? formFields.IndexOf(currentForm) : -1;
+                    int nextIdx;
+                    if (isShift)
+                    {
+                        nextIdx = curIdx <= 0 ? formFields.Count - 1 : curIdx - 1;
+                    }
+                    else
+                    {
+                        nextIdx = (curIdx + 1) % formFields.Count;
+                    }
+
+                    var nextField = formFields[nextIdx];
+                    ViewModel.CurrentPage.SelectElement(nextField);
+                    nextField.IsInEditMode = true;
+                    e.Handled = true;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => FocusInPlaceTextBox(nextField), Avalonia.Threading.DispatcherPriority.Input);
+                    return;
+                }
+            }
 
             switch (e.Key)
             {
@@ -1453,11 +1544,11 @@ public partial class DocumentCanvasView : UserControl
                     break;
                 case Key.Delete:
                 case Key.Back:
-                    ViewModel.Inspector.DeleteSelectedElementCommand.Execute(null);
+                    ViewModel?.Inspector.DeleteSelectedElementCommand.Execute(null);
                     e.Handled = true;
                     break;
                 case Key.Escape:
-                    ViewModel.CurrentPage?.ClearSelection();
+                    ViewModel?.CurrentPage?.ClearSelection();
                     e.Handled = true;
                     break;
                 case Key.Left:
@@ -1477,7 +1568,7 @@ public partial class DocumentCanvasView : UserControl
                         double newX = selected.X;
                         double newY = selected.Y;
                         var el = selected;
-                        ViewModel.UndoRedo.RecordAction(
+                        ViewModel?.UndoRedo.RecordAction(
                             $"Nudge {el.DisplayName}",
                             () => { el.X = oldX; el.Y = oldY; },
                             () => { el.X = newX; el.Y = newY; }
@@ -1486,11 +1577,11 @@ public partial class DocumentCanvasView : UserControl
                     }
                     break;
                 case Key.OemCloseBrackets:
-                    ViewModel.Inspector.BringToFrontCommand.Execute(null);
+                    ViewModel?.Inspector.BringToFrontCommand.Execute(null);
                     e.Handled = true;
                     break;
                 case Key.OemOpenBrackets:
-                    ViewModel.Inspector.SendToBackCommand.Execute(null);
+                    ViewModel?.Inspector.SendToBackCommand.Execute(null);
                     e.Handled = true;
                     break;
             }

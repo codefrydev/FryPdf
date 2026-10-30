@@ -284,6 +284,8 @@
                                                  CornerRadius="2"
                                                  AcceptsReturn="True"
                                                  TextWrapping="Wrap"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                  TextAlignment="{Binding Alignment, Converter={StaticResource TextAlignmentConverter}}"
                                                  Padding="{Binding Padding, Converter={StaticResource DoubleToThickness}}"
                                                  IsVisible="{Binding IsInEditMode}"
@@ -658,25 +660,26 @@
                                                 <!-- 6. Dropdown Select Field -->
                                                 <StackPanel Spacing="3"
                                                             IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=Dropdown}">
-                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}" />
-                                                    <Border Background="{DynamicResource WinPanelBrush}" BorderBrush="{DynamicResource WinBorderBrush}" BorderThickness="1" CornerRadius="4" Height="28" Padding="8,2">
-                                                        <Grid ColumnDefinitions="*,Auto">
-                                                            <TextBlock Grid.Column="0" Text="{Binding Placeholder}" FontSize="11" Foreground="{DynamicResource WinMutedBrush}" VerticalAlignment="Center" />
-                                                            <materialIcons:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="14" Height="14" Foreground="{DynamicResource WinMutedBrush}" VerticalAlignment="Center" />
-                                                        </Grid>
-                                                    </Border>
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <ComboBox ItemsSource="{Binding Options}"
+                                                              SelectedItem="{Binding Value, Mode=TwoWay}"
+                                                              PlaceholderText="{Binding Placeholder}"
+                                                              FontSize="{Binding FontSize}"
+                                                              HorizontalAlignment="Stretch"
+                                                              Height="28" CornerRadius="4" />
                                                 </StackPanel>
 
                                                 <!-- 7. Date Picker Field -->
                                                 <StackPanel Spacing="3"
                                                             IsVisible="{Binding FieldType, Converter={StaticResource EqualityConverter}, ConverterParameter=DatePicker}">
-                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}" />
-                                                    <Border Background="{DynamicResource WinPanelBrush}" BorderBrush="{DynamicResource WinBorderBrush}" BorderThickness="1" CornerRadius="4" Height="28" Padding="8,2">
-                                                        <Grid ColumnDefinitions="*,Auto">
-                                                            <TextBlock Grid.Column="0" Text="{Binding Placeholder, FallbackValue='YYYY-MM-DD'}" FontSize="11" Foreground="{DynamicResource WinMutedBrush}" VerticalAlignment="Center" />
-                                                            <materialIcons:MaterialIcon Grid.Column="1" Kind="Calendar" Width="14" Height="14" Foreground="{DynamicResource WinAccentBrush}" VerticalAlignment="Center" />
-                                                        </Grid>
-                                                    </Border>
+                                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WinMutedBrush}"
+                                                               IsVisible="{Binding ShowLabel}" />
+                                                    <CalendarDatePicker SelectedDate="{Binding Value, Mode=TwoWay, Converter={StaticResource DateTimeFormatConverter}}"
+                                                                        PlaceholderText="{Binding Placeholder, FallbackValue='YYYY-MM-DD'}"
+                                                                        FontSize="{Binding FontSize}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        Height="28" CornerRadius="4" />
                                                 </StackPanel>
 
                                                 <!-- 8. Number / Currency Field -->

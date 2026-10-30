@@ -310,6 +310,15 @@ internal class QuestPdfDocumentWrapper : IDocument
                         float elW = (float)Math.Max(1, element.Width);
                         float elH = (float)Math.Max(1, element.Height);
 
+                        if (element is PdfTextElement textEl)
+                        {
+                            var reqDims = TextLayoutEngine.CalculateRequiredDimensions(textEl);
+                            if (reqDims.Height > elH)
+                            {
+                                elH = (float)Math.Ceiling(reqDims.Height + 2);
+                            }
+                        }
+
                         // Permanent Redaction Sanitization: Strip underlying text/images completely covered by a redaction box
                         if (element is PdfTextElement or PdfImageElement)
                         {
@@ -330,12 +339,15 @@ internal class QuestPdfDocumentWrapper : IDocument
                             var c = layerContainer
                                 .PaddingLeft(elX)
                                 .PaddingTop(elY)
-                                .Width(elW)
-                                .Height(elH);
+                                .Width(elW);
 
                             if (element.Rotation != 0)
                             {
-                                c = c.Rotate((float)element.Rotation);
+                                c = c.Height(elH).Rotate((float)element.Rotation);
+                            }
+                            else
+                            {
+                                c = c.MinHeight(elH);
                             }
 
                             ComposeElement(c, element);
@@ -908,33 +920,154 @@ internal class QuestPdfDocumentWrapper : IDocument
 
     private void ComposeFormField(IContainer container, PdfFormFieldElement formEl)
     {
-        container.Border(1).BorderColor(formEl.BorderColorHex).Background(formEl.BackgroundColorHex).Padding(4).Column(fCol =>
+        var target = container;
+
+        // Apply background fill if enabled
+        if (formEl.ShowBackground && !string.IsNullOrEmpty(formEl.BackgroundColorHex) && !formEl.BackgroundColorHex.Equals("Transparent", StringComparison.OrdinalIgnoreCase))
         {
-            fCol.Item().Row(r =>
+            target = target.Background(formEl.BackgroundColorHex);
+        }
+
+        // Apply border if enabled
+        if (formEl.ShowBorder && !string.IsNullOrEmpty(formEl.BorderColorHex) && !formEl.BorderColorHex.Equals("Transparent", StringComparison.OrdinalIgnoreCase))
+        {
+            target = target.Border(1).BorderColor(formEl.BorderColorHex);
+        }
+
+        string displayVal = !string.IsNullOrEmpty(formEl.Value) ? formEl.Value : string.Empty;
+        string textColor = !string.IsNullOrEmpty(formEl.TextColorHex) ? formEl.TextColorHex : "#1E293B";
+        string fontFamily = !string.IsNullOrEmpty(formEl.FontFamily) ? formEl.FontFamily : "Arial";
+
+        // 1. Checkbox Field
+        if (formEl.FieldType == FormFieldType.Checkbox)
+        {
+            target.Padding(2).Row(r =>
             {
-                r.RelativeItem().Text(formEl.Label).FontSize(8).Bold().FontColor(Colors.Grey.Darken3);
-                if (formEl.IsRequired)
+                r.AutoItem().Width(12).Height(12).Border(1).BorderColor(Colors.Grey.Darken2)
+                    .Background(formEl.IsChecked ? Colors.Blue.Lighten4 : Colors.White)
+                    .AlignCenter().AlignMiddle()
+                    .Text(formEl.IsChecked ? "✓" : "").FontSize(8).Bold().FontColor(Colors.Blue.Darken3);
+
+                if (formEl.ShowLabel && !string.IsNullOrEmpty(formEl.Label))
                 {
-                    r.AutoItem().Text("* Required").FontSize(7f).FontColor(Colors.Red.Medium);
+                    r.RelativeItem().PaddingLeft(4).AlignMiddle().Text(formEl.Label).FontSize(8).FontColor(Colors.Grey.Darken3);
                 }
             });
+            return;
+        }
 
-            if (formEl.FieldType == FormFieldType.Checkbox)
+        // 2. Radio Button Field
+        if (formEl.FieldType == FormFieldType.Radio)
+        {
+            target.Padding(2).Row(r =>
             {
-                fCol.Item().PaddingTop(2).Row(r =>
+                r.AutoItem().Width(12).Height(12).CornerRadius(6).Border(1).BorderColor(Colors.Grey.Darken2)
+                    .Background(Colors.White)
+                    .AlignCenter().AlignMiddle()
+                    .Text(formEl.IsChecked ? "●" : "").FontSize(7).Bold().FontColor(Colors.Blue.Darken3);
+
+                if (formEl.ShowLabel && !string.IsNullOrEmpty(formEl.Label))
                 {
-                    r.AutoItem().Width(10).Height(10).Border(1).BorderColor(Colors.Grey.Darken2).Background(formEl.IsChecked ? Colors.Blue.Lighten4 : Colors.White);
-                    r.RelativeItem().PaddingLeft(4).Text(formEl.IsChecked ? "[X] Checked" : "[ ] Unchecked").FontSize(7.5f);
+                    r.RelativeItem().PaddingLeft(4).AlignMiddle().Text(formEl.Label).FontSize(8).FontColor(Colors.Grey.Darken3);
+                }
+            });
+            return;
+        }
+
+        // 3. Signature & Signature Line Field
+        if (formEl.FieldType == FormFieldType.Signature || formEl.FieldType == FormFieldType.SignatureLine)
+        {
+            target.PaddingHorizontal(4).PaddingBottom(2).Column(sCol =>
+            {
+                if (formEl.ShowLabel && !string.IsNullOrEmpty(formEl.Label) && formEl.Height >= 32)
+                {
+                    sCol.Item().Text(formEl.Label).FontSize(7.5f).Bold().FontColor(Colors.Grey.Darken2);
+                }
+
+                sCol.Item().BorderBottom(1).BorderColor(Colors.Grey.Medium).PaddingBottom(2).AlignMiddle().Text(text =>
+                {
+                    if (!string.IsNullOrEmpty(formEl.Value))
+                    {
+                        text.Span(formEl.Value).FontFamily("Georgia").FontSize(9.5f).Italic().FontColor(Colors.Blue.Darken3);
+                    }
+                    else
+                    {
+                        text.Span("[Authorized Signature Line]").FontSize(8).Italic().FontColor(Colors.Grey.Medium);
+                    }
                 });
-            }
-            else if (formEl.FieldType == FormFieldType.Signature)
+            });
+            return;
+        }
+
+        // 4. Push Button Field
+        if (formEl.FieldType == FormFieldType.Button)
+        {
+            target.Background(formEl.BorderColorHex ?? "#0F6CBD").Padding(4).AlignCenter().AlignMiddle()
+                .Text(formEl.Label ?? "Button").FontSize(8.5f).Bold().FontColor(Colors.White);
+            return;
+        }
+
+        // 5. Multiline Text Area
+        if (formEl.FieldType == FormFieldType.MultilineText)
+        {
+            target.Padding(4).Column(mCol =>
             {
-                fCol.Item().PaddingTop(4).BorderBottom(1).BorderColor(Colors.Grey.Medium).PaddingBottom(2).Text(string.IsNullOrEmpty(formEl.Value) ? "Authorized Signature" : formEl.Value).FontSize(8.5f).Italic().FontColor(Colors.Blue.Darken2);
-            }
-            else
+                if (formEl.ShowLabel && !string.IsNullOrEmpty(formEl.Label) && formEl.Height >= 45)
+                {
+                    mCol.Item().Text(formEl.Label).FontSize(7.5f).Bold().FontColor(Colors.Grey.Darken3);
+                }
+
+                mCol.Item().Text(displayVal).FontFamily(fontFamily)
+                    .FontSize((float)Math.Clamp(formEl.FontSize, 7.5, 11))
+                    .FontColor(textColor);
+            });
+            return;
+        }
+
+        // 6. Standard Single-Line Inputs (Text, Number, Dropdown, DatePicker)
+        // If container height is spacious (>= 36pt) and label is explicitly requested, render stacked label + input
+        if (formEl.ShowLabel && formEl.Height >= 36 && !string.IsNullOrWhiteSpace(formEl.Label))
+        {
+            target.Padding(3).Column(fCol =>
             {
-                fCol.Item().PaddingTop(2).Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White).Padding(2).Text(string.IsNullOrEmpty(formEl.Value) ? formEl.Placeholder : formEl.Value).FontSize(7.5f).FontColor(string.IsNullOrEmpty(formEl.Value) ? Colors.Grey.Medium : Colors.Black);
-            }
+                fCol.Item().Row(r =>
+                {
+                    r.RelativeItem().Text(formEl.Label).FontSize(7.5f).Bold().FontColor(Colors.Grey.Darken3);
+                    if (formEl.IsRequired)
+                    {
+                        r.AutoItem().Text("*").FontSize(7.5f).Bold().FontColor(Colors.Red.Medium);
+                    }
+                });
+
+                float inputFontSize = (float)Math.Clamp(formEl.FontSize > 0 ? formEl.FontSize : 9.5, 7.0, Math.Max(8, formEl.Height - 16));
+                var inputContainer = fCol.Item().PaddingTop(1).AlignMiddle();
+
+                inputContainer.Text(text =>
+                {
+                    var span = text.Span(displayVal)
+                        .FontFamily(fontFamily)
+                        .FontSize(inputFontSize)
+                        .FontColor(textColor);
+
+                    if (formEl.TextAlignment == TextAlignmentMode.Center) text.AlignCenter();
+                    else if (formEl.TextAlignment == TextAlignmentMode.Right) text.AlignRight();
+                });
+            });
+            return;
+        }
+
+        // Compact Single-Line Input (Height < 36pt or ShowLabel == false):
+        // Fills the allocated box directly without stacked label headers, eliminating layout overflow completely!
+        float compactFontSize = (float)Math.Clamp(formEl.FontSize > 0 ? formEl.FontSize : (formEl.Height * 0.65), 7.0, Math.Max(8, formEl.Height - 4));
+        target.PaddingHorizontal(4).AlignMiddle().Text(text =>
+        {
+            text.Span(displayVal)
+                .FontFamily(fontFamily)
+                .FontSize(compactFontSize)
+                .FontColor(textColor);
+
+            if (formEl.TextAlignment == TextAlignmentMode.Center) text.AlignCenter();
+            else if (formEl.TextAlignment == TextAlignmentMode.Right) text.AlignRight();
         });
     }
 

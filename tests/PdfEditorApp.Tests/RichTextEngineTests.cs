@@ -176,6 +176,81 @@ public class RichTextEngineTests
     }
 
     [Fact]
+    public void RichTextHelper_SpansToMarkdown_OmitsRawFontAndSizeTagsByDefault()
+    {
+        var spans = new List<PdfTextSpan>
+        {
+            new() { Text = "PIN Code: " },
+            new() { Text = "852122", FontFamily = "Noto Serif", FontSize = 12.0 },
+            new() { Text = "\nMobile: " },
+            new() { Text = "8789427458", FontFamily = "Noto Serif", FontSize = 12.0 }
+        };
+
+        var baseStyle = new PdfTextElement { FontFamily = "Arial", FontSize = 10.0 };
+        string markdown = RichTextHelper.SpansToMarkdown(spans, baseStyle);
+
+        // Crucial guarantee: Never leak pseudo-HTML tags into user-facing text
+        Assert.DoesNotContain("<font", markdown);
+        Assert.DoesNotContain("</font>", markdown);
+        Assert.DoesNotContain("<size", markdown);
+        Assert.DoesNotContain("</size>", markdown);
+        Assert.Equal("PIN Code: 852122\nMobile: 8789427458", markdown);
+    }
+
+    [Fact]
+    public void RichTextHelper_StripExtendedTags_RemovesAllPseudoHtmlTags()
+    {
+        string corrupted = "PIN Code:<font=Noto Serif> 852122</font>Mobile:<font=Noto Serif>8789427458</font>";
+        string sanitized = RichTextHelper.StripExtendedTags(corrupted);
+        Assert.Equal("PIN Code: 852122Mobile:8789427458", sanitized);
+
+        string multiTag = "<size=14><color=#123456>Header Text</color></size>";
+        Assert.Equal("Header Text", RichTextHelper.StripExtendedTags(multiTag));
+    }
+
+    [Fact]
+    public void TextElementViewModel_InEditMode_NeverLeaksFontTagsAndAutoFitsHeight()
+    {
+        var model = new PdfTextElement
+        {
+            X = 20,
+            Y = 20,
+            Width = 200,
+            Height = 30, // Initially short
+            FontFamily = "Arial",
+            FontSize = 12,
+            Spans = new List<PdfTextSpan>
+            {
+                new() { Text = "Ayush Priyadarshi\nS/O: Rakesh Kumar,\ndighi,\nPIN Code: " },
+                new() { Text = "852122", FontFamily = "Noto Serif" },
+                new() { Text = "\nMobile: " },
+                new() { Text = "8789427458", FontFamily = "Noto Serif" }
+            }
+        };
+        model.SynchronizePlainTextFromSpans();
+
+        var vm = new TextElementViewModel(model);
+        double initialHeight = vm.Height;
+
+        // Enter edit mode (as when double tapping on canvas)
+        vm.IsInEditMode = true;
+
+        // Must NOT contain <font=Noto Serif>
+        Assert.DoesNotContain("<font", vm.Text);
+        Assert.DoesNotContain("</font>", vm.Text);
+        Assert.Contains("852122", vm.Text);
+        Assert.Contains("8789427458", vm.Text);
+
+        // Height must have auto-expanded beyond initial 30pt to accommodate all 5 lines
+        Assert.True(vm.Height > initialHeight, $"Expected Height ({vm.Height}) > initialHeight ({initialHeight})");
+
+        // Exit edit mode
+        vm.IsInEditMode = false;
+        Assert.DoesNotContain("<font", vm.Text);
+        Assert.True(vm.Height > initialHeight);
+    }
+
+    [Fact]
     public void TextElementViewModel_SetMarkdownText_UpdatesSpansAndPlainText()
     {
         var vm = new TextElementViewModel();

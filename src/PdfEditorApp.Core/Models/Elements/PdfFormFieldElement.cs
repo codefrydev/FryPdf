@@ -21,6 +21,15 @@ public class PdfFormFieldElement : PdfElementBase
     public string BorderColorHex { get; set; } = "#0F6CBD";
     public string BackgroundColorHex { get; set; } = "#F8FAFC";
     public double FontSize { get; set; } = 12;
+    public string FontFamily { get; set; } = "Arial";
+    public string TextColorHex { get; set; } = "#1E293B";
+    public TextAlignmentMode TextAlignment { get; set; } = TextAlignmentMode.Left;
+    public bool ShowBorder { get; set; } = true;
+    public bool ShowBackground { get; set; } = true;
+    public bool ShowLabel { get; set; } = true;
+    public int MaxLength { get; set; } = 0;
+    public bool IsPassword { get; set; } = false;
+    public int TabIndex { get; set; } = 0;
     public List<string> Options { get; set; } = new() { "Option 1", "Option 2", "Option 3" };
 
     // Acrobat Form Calculations & Action Buttons

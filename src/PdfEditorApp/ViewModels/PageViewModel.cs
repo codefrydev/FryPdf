@@ -20,6 +20,34 @@ public partial class PageViewModel : ViewModelBase
     public PageViewModel(ICanvasElementService? elementService = null)
     {
         _elementService = elementService ?? DefaultElementService;
+        Elements.CollectionChanged += OnElementsCollectionChanged;
+    }
+
+    private void OnElementsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (var item in e.OldItems.OfType<FormFieldElementViewModel>())
+            {
+                item.PropertyChanged -= OnFormFieldPropertyChanged;
+            }
+        }
+        if (e.NewItems != null)
+        {
+            foreach (var item in e.NewItems.OfType<FormFieldElementViewModel>())
+            {
+                item.PropertyChanged += OnFormFieldPropertyChanged;
+            }
+        }
+    }
+
+    private void OnFormFieldPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(FormFieldElementViewModel.Value) ||
+            e.PropertyName == nameof(FormFieldElementViewModel.IsChecked))
+        {
+            RecalculateFormFields();
+        }
     }
 
     private static ICanvasElementService? _defaultElementService;
@@ -495,33 +523,46 @@ public partial class PageViewModel : ViewModelBase
         }
     }
 
+    private bool _isRecalculating;
+
     public void RecalculateFormFields()
     {
-        var formFields = Elements.OfType<FormFieldElementViewModel>().ToList();
-        foreach (var field in formFields.Where(f => f.CalculationFormula != CalculationFormula.None))
+        if (_isRecalculating) return;
+        _isRecalculating = true;
+        try
         {
-            if (string.IsNullOrWhiteSpace(field.CalculationSourceFields)) continue;
-            var sourceNames = field.CalculationSourceFields
-                .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            var values = formFields
-                .Where(f => sourceNames.Contains(f.FieldName, StringComparer.OrdinalIgnoreCase))
-                .Select(f => double.TryParse(f.Value, out var v) ? v : (double.TryParse(f.DefaultValue, out var dv) ? dv : 0.0))
-                .ToList();
-
-            if (values.Count == 0) continue;
-
-            double result = field.CalculationFormula switch
+            var formFields = Elements.OfType<FormFieldElementViewModel>().ToList();
+            foreach (var field in formFields.Where(f => f.CalculationFormula != CalculationFormula.None))
             {
-                CalculationFormula.Sum => values.Sum(),
-                CalculationFormula.Average => values.Average(),
-                CalculationFormula.Product => values.Aggregate(1.0, (acc, x) => acc * x),
-                CalculationFormula.Min => values.Min(),
-                CalculationFormula.Max => values.Max(),
-                _ => 0
-            };
+                if (string.IsNullOrWhiteSpace(field.CalculationSourceFields)) continue;
+                var sourceNames = field.CalculationSourceFields
+                    .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            field.Value = result.ToString("F2");
+                var values = formFields
+                    .Where(f => sourceNames.Contains(f.FieldName, StringComparer.OrdinalIgnoreCase))
+                    .Select(f => double.TryParse(f.Value, out var v) ? (double?)v : (double.TryParse(f.DefaultValue, out var dv) ? (double?)dv : null))
+                    .Where(v => v.HasValue)
+                    .Select(v => v!.Value)
+                    .ToList();
+
+                if (values.Count == 0) continue;
+
+                double result = field.CalculationFormula switch
+                {
+                    CalculationFormula.Sum => values.Sum(),
+                    CalculationFormula.Average => values.Average(),
+                    CalculationFormula.Product => values.Aggregate(1.0, (acc, x) => acc * x),
+                    CalculationFormula.Min => values.Min(),
+                    CalculationFormula.Max => values.Max(),
+                    _ => 0
+                };
+
+                field.Value = result.ToString("F2");
+            }
+        }
+        finally
+        {
+            _isRecalculating = false;
         }
     }
 }

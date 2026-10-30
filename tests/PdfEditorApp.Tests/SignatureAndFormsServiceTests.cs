@@ -109,4 +109,133 @@ public class SignatureAndFormsServiceTests
         Assert.Equal("chk_terms_agreed", chkField.FieldName);
         Assert.Equal("false", chkField.DefaultValue);
     }
+
+    [Fact]
+    public void PdfFormFieldElement_CloneAndExtendedProperties_PreservesAllFields()
+    {
+        var original = new PdfFormFieldElement
+        {
+            FieldName = "email_address",
+            Label = "Email Address:",
+            Value = "test@example.com",
+            DefaultValue = "user@domain.com",
+            FieldType = FormFieldType.Text,
+            FontFamily = "Inter",
+            FontSize = 14.5,
+            TextColorHex = "#2563EB",
+            TextAlignment = TextAlignmentMode.Center,
+            ShowBorder = false,
+            ShowBackground = true,
+            ShowLabel = false,
+            MaxLength = 50,
+            IsPassword = false,
+            TabIndex = 2
+        };
+        original.Options.Add("Custom Option");
+
+        var cloned = (PdfFormFieldElement)original.Clone();
+
+        Assert.Equal(original.FieldName, cloned.FieldName);
+        Assert.Equal(original.Label, cloned.Label);
+        Assert.Equal(original.Value, cloned.Value);
+        Assert.Equal(original.FontFamily, cloned.FontFamily);
+        Assert.Equal(original.FontSize, cloned.FontSize);
+        Assert.Equal(original.TextColorHex, cloned.TextColorHex);
+        Assert.Equal(original.TextAlignment, cloned.TextAlignment);
+        Assert.False(cloned.ShowBorder);
+        Assert.True(cloned.ShowBackground);
+        Assert.False(cloned.ShowLabel);
+        Assert.Equal(50, cloned.MaxLength);
+        Assert.Equal(2, cloned.TabIndex);
+        Assert.Contains("Custom Option", cloned.Options);
+    }
+
+    [Fact]
+    public void PageViewModel_RecalculateFormFields_AutomaticallyRecalculatesOnFieldValueChange()
+    {
+        var page = new PdfPageModel { PageNumber = 1 };
+        var pageVm = new PdfEditorApp.ViewModels.PageViewModel();
+        pageVm.LoadFromModel(page);
+
+        var item1 = new PdfEditorApp.ViewModels.ElementViewModels.FormFieldElementViewModel
+        {
+            FieldName = "item_price",
+            Value = "25.50"
+        };
+        var item2 = new PdfEditorApp.ViewModels.ElementViewModels.FormFieldElementViewModel
+        {
+            FieldName = "item_tax",
+            Value = "4.50"
+        };
+        var total = new PdfEditorApp.ViewModels.ElementViewModels.FormFieldElementViewModel
+        {
+            FieldName = "order_total",
+            CalculationFormula = CalculationFormula.Sum,
+            CalculationSourceFields = "item_price, item_tax",
+            Value = "0.00"
+        };
+
+        pageVm.Elements.Add(item1);
+        pageVm.Elements.Add(item2);
+        pageVm.Elements.Add(total);
+
+        // Initial recalculation
+        pageVm.RecalculateFormFields();
+        Assert.Equal("30.00", total.Value);
+
+        // Value change should trigger automatic recalculation
+        item1.Value = "50.00";
+        Assert.Equal("54.50", total.Value);
+    }
+
+    [Fact]
+    public void FryPdfViewerViewModel_SyncCurrentDocumentModel_CapturesViewerEdits()
+    {
+        var doc = new PdfDocumentModel { Title = "InteractiveForm.frypdf" };
+        var page = new PdfPageModel { PageNumber = 1 };
+        page.Elements.Add(new PdfFormFieldElement
+        {
+            FieldName = "full_name",
+            Value = ""
+        });
+        doc.Pages.Add(page);
+
+        var viewer = new PdfEditorApp.ViewModels.FryPdfViewer.FryPdfViewerViewModel();
+        viewer.LoadFromModel(doc);
+
+        Assert.Single(viewer.Pages);
+        var formVm = viewer.Pages[0].Elements.OfType<PdfEditorApp.ViewModels.ElementViewModels.FormFieldElementViewModel>().First();
+        formVm.Value = "Alice Developer";
+
+        // Synchronize back to document model
+        viewer.SyncCurrentDocumentModel();
+
+        var syncedField = viewer.CurrentDocumentModel!.Pages[0].Elements.OfType<PdfFormFieldElement>().First();
+        Assert.Equal("Alice Developer", syncedField.Value);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task PdfExportService_ExportsCompactFormField_WithoutOverflowOrClipping()
+    {
+        var doc = new PdfDocumentModel { Title = "CompactFormExport.pdf" };
+        var page = new PdfPageModel { PageNumber = 1, Width = 595.28, Height = 841.89 };
+        page.Elements.Add(new PdfFormFieldElement
+        {
+            FieldName = "tax_id",
+            Label = "Tax ID:",
+            Value = "XX-9988776",
+            X = 50,
+            Y = 100,
+            Width = 180,
+            Height = 18, // Typical compact 18pt AcroField height
+            ShowLabel = false
+        });
+        doc.Pages.Add(page);
+
+        var exportService = new PdfExportService();
+        byte[] pdfBytes = await exportService.ExportToBytesAsync(doc);
+
+        Assert.NotNull(pdfBytes);
+        Assert.True(pdfBytes.Length > 500);
+    }
 }

@@ -16,6 +16,18 @@ public static class RichTextHelper
     private static readonly Regex ColorTagRegex = new(@"<color\s*=\s*(?<col>[#\w\d]+)>(?<content>.*?)</color>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
     private static readonly Regex UnderlineTagRegex = new(@"<u>(?<content>.*?)</u>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
     private static readonly Regex LinkTagRegex = new(@"\[(?<label>[^\]]+)\]\((?<url>[^\)]+)\)", RegexOptions.Compiled);
+    private static readonly Regex ExtendedTagsRegex = new(@"</?(?:font|size|color|mark|highlight)(?:\s*=[^>]*?)?>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Strips any raw pseudo-HTML markup tags (&lt;font=...&gt;, &lt;size=...&gt;, &lt;color=...&gt;, &lt;mark=...&gt;, etc.) from a text string,
+    /// preserving the clean human-readable content and standard Markdown.
+    /// </summary>
+    public static string StripExtendedTags(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        if (!text.Contains('<')) return text;
+        return ExtendedTagsRegex.Replace(text, string.Empty);
+    }
 
     /// <summary>
     /// Parses an inline formatted string containing Markdown / HTML tag notation into structured <see cref="PdfTextSpan"/> items.
@@ -377,8 +389,12 @@ public static class RichTextHelper
     /// <summary>
     /// Reconstructs a clean Markdown/HTML string representation from structured spans.
     /// Useful for feeding the in-place text editor.
+    /// <summary>
+    /// Serializes structured <see cref="PdfTextSpan"/> items into Markdown notation.
+    /// By default, preserves standard readable Markdown (**bold**, *italic*, <u>underline</u>, ~~strike~~, links)
+    /// without polluting user-facing text with raw pseudo-HTML &lt;font=...&gt;, &lt;size=...&gt;, or &lt;color=...&gt; tags.
     /// </summary>
-    public static string SpansToMarkdown(IReadOnlyList<PdfTextSpan>? spans, PdfTextElement? baseStyle = null)
+    public static string SpansToMarkdown(IReadOnlyList<PdfTextSpan>? spans, PdfTextElement? baseStyle = null, bool includeExtendedTags = false)
     {
         if (spans == null || spans.Count == 0)
         {
@@ -426,24 +442,28 @@ public static class RichTextHelper
                 fragment = $"**{fragment}**";
             }
 
-            // Check custom color
-            if (!string.IsNullOrEmpty(span.TextColorHex) &&
-                !string.Equals(span.TextColorHex, baseStyle?.TextColorHex, StringComparison.OrdinalIgnoreCase))
+            // Extended pseudo-tags (only if explicitly enabled)
+            if (includeExtendedTags)
             {
-                fragment = $"<color={span.TextColorHex}>{fragment}</color>";
-            }
+                // Check custom color
+                if (!string.IsNullOrEmpty(span.TextColorHex) &&
+                    !string.Equals(span.TextColorHex, baseStyle?.TextColorHex, StringComparison.OrdinalIgnoreCase))
+                {
+                    fragment = $"<color={span.TextColorHex}>{fragment}</color>";
+                }
 
-            // Check custom font size
-            if (span.FontSize.HasValue && baseStyle?.FontSize != null && Math.Abs(span.FontSize.Value - baseStyle.FontSize) > 0.1)
-            {
-                fragment = string.Format(CultureInfo.InvariantCulture, "<size={0:0.#}>{1}</size>", span.FontSize.Value, fragment);
-            }
+                // Check custom font size
+                if (span.FontSize.HasValue && baseStyle?.FontSize != null && Math.Abs(span.FontSize.Value - baseStyle.FontSize) > 0.1)
+                {
+                    fragment = string.Format(CultureInfo.InvariantCulture, "<size={0:0.#}>{1}</size>", span.FontSize.Value, fragment);
+                }
 
-            // Check custom font family
-            if (!string.IsNullOrEmpty(span.FontFamily) &&
-                !string.Equals(span.FontFamily, baseStyle?.FontFamily, StringComparison.OrdinalIgnoreCase))
-            {
-                fragment = $"<font={span.FontFamily}>{fragment}</font>";
+                // Check custom font family
+                if (!string.IsNullOrEmpty(span.FontFamily) &&
+                    !string.Equals(span.FontFamily, baseStyle?.FontFamily, StringComparison.OrdinalIgnoreCase))
+                {
+                    fragment = $"<font={span.FontFamily}>{fragment}</font>";
+                }
             }
 
             // Check hyperlink

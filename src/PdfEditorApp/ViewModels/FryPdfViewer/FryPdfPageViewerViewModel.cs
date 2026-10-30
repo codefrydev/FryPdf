@@ -174,4 +174,37 @@ public partial class FryPdfPageViewerViewModel : ObservableObject
             chart.ReplayAnimation();
         }
     }
+
+    /// <summary>
+    /// Serializes the presentation viewer page back into a standard <see cref="PdfPageModel"/>,
+    /// harvesting all user-entered form values and interactive state.
+    /// </summary>
+    public PdfPageModel ToPageModel()
+    {
+        var model = new PdfPageModel
+        {
+            Id = Id,
+            PageNumber = PageNumber,
+            Format = Format,
+            Orientation = Orientation,
+            RotationAngle = RotationAngle,
+            Width = Width,
+            Height = Height,
+            BackgroundColorHex = BackgroundColorHex,
+            ShowHeaderFooter = ShowHeaderFooter,
+            HeaderLeft = HeaderLeft,
+            HeaderCenter = HeaderCenter,
+            HeaderRight = HeaderRight,
+            FooterLeft = FooterLeft,
+            FooterCenter = FooterCenter,
+            FooterRight = FooterRight
+        };
+
+        foreach (var el in Elements)
+        {
+            model.Elements.Add(el.ToModel());
+        }
+
+        return model;
+    }
 }

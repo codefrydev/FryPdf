@@ -2021,14 +2021,28 @@
                             </StackPanel>
 
                             <StackPanel Spacing="3">
+                                <TextBlock Text="Field Internal Name (AcroForm)" Classes="inspector-label" />
+                                <TextBox Classes="m3-outlined" Text="{Binding FormFieldElement.FieldName, Mode=TwoWay}" Height="32" FontSize="12" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="3">
                                 <TextBlock Text="Field Label" Classes="inspector-label" />
                                 <TextBox Classes="m3-outlined" Text="{Binding FormFieldElement.Label, Mode=TwoWay}" Height="32" FontSize="12" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Current Field Value" Classes="inspector-label" />
+                                <TextBox Classes="m3-outlined" Text="{Binding FormFieldElement.Value, Mode=TwoWay}" Height="32" FontSize="12" PlaceholderText="Type form value..." />
                             </StackPanel>
 
                             <StackPanel Spacing="3">
                                 <TextBlock Text="Placeholder / Default Value" Classes="inspector-label" />
                                 <TextBox Classes="m3-outlined" Text="{Binding FormFieldElement.Placeholder, Mode=TwoWay}" Height="32" FontSize="12" />
                             </StackPanel>
+
+                            <CheckBox IsChecked="{Binding FormFieldElement.ShowLabel, Mode=TwoWay}">
+                                <TextBlock Text="Display Field Label" FontSize="11.5" />
+                            </CheckBox>
 
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Validation Rule Preset" Classes="inspector-label" />

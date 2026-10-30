@@ -16,6 +16,18 @@ public partial class TextElementViewModel : ElementViewModelBase
     [ObservableProperty]
     private string _text = "Enter text here";
 
+    partial void OnTextChanged(string value)
+    {
+        if (IsInEditMode)
+        {
+            double reqH = CalculateRequiredHeight();
+            if (reqH > Height)
+            {
+                Height = Math.Ceiling(reqH + 4);
+            }
+        }
+    }
+
     [ObservableProperty]
     private System.Collections.Generic.List<PdfTextSpan>? _spans;
 
@@ -520,8 +532,9 @@ public partial class TextElementViewModel : ElementViewModelBase
 
     public void SetMarkdownText(string markdown)
     {
+        string cleanMarkdown = RichTextHelper.StripExtendedTags(markdown);
         var model = (PdfTextElement)ToModel();
-        var parsedSpans = RichTextHelper.ParseMarkdownToSpans(markdown, model);
+        var parsedSpans = RichTextHelper.ParseMarkdownToSpans(cleanMarkdown, model);
         if (parsedSpans.Count > 1 || parsedSpans.Any(s => s.IsBold == true || s.IsItalic == true || s.IsUnderline == true || s.IsStrikethrough == true || !string.IsNullOrEmpty(s.TextColorHex) || s.Script != TextScriptMode.Normal))
         {
             Spans = parsedSpans;
@@ -539,9 +552,9 @@ public partial class TextElementViewModel : ElementViewModelBase
         if (Spans != null && Spans.Count > 0)
         {
             var model = (PdfTextElement)ToModel();
-            return RichTextHelper.SpansToMarkdown(Spans, model);
+            return RichTextHelper.StripExtendedTags(RichTextHelper.SpansToMarkdown(Spans, model, includeExtendedTags: false));
         }
-        return Text ?? string.Empty;
+        return RichTextHelper.StripExtendedTags(Text ?? string.Empty);
     }
 
     public void ClearSpans()
@@ -620,6 +633,17 @@ public partial class TextElementViewModel : ElementViewModelBase
             {
                 Text = GetMarkdownText();
             }
+            else
+            {
+                Text = RichTextHelper.StripExtendedTags(Text);
+            }
+
+            // Ensure bounding height accommodates all text so top lines never scroll off
+            double reqH = CalculateRequiredHeight();
+            if (reqH > Height)
+            {
+                Height = Math.Ceiling(reqH + 4);
+            }
         }
         else
         {
@@ -627,6 +651,12 @@ public partial class TextElementViewModel : ElementViewModelBase
             if (!string.IsNullOrEmpty(Text))
             {
                 SetMarkdownText(Text);
+            }
+
+            double reqH = CalculateRequiredHeight();
+            if (reqH > Height)
+            {
+                Height = Math.Ceiling(reqH + 4);
             }
         }
     }

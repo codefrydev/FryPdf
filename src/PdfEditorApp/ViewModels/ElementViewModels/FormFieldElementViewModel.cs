@@ -54,6 +54,33 @@ public partial class FormFieldElementViewModel : ElementViewModelBase
     [ObservableProperty]
     private double _fontSize = 12;
 
+    [ObservableProperty]
+    private string _fontFamily = "Arial";
+
+    [ObservableProperty]
+    private string _textColorHex = "#1E293B";
+
+    [ObservableProperty]
+    private TextAlignmentMode _textAlignment = TextAlignmentMode.Left;
+
+    [ObservableProperty]
+    private bool _showBorder = true;
+
+    [ObservableProperty]
+    private bool _showBackground = true;
+
+    [ObservableProperty]
+    private bool _showLabel = true;
+
+    [ObservableProperty]
+    private int _maxLength = 0;
+
+    [ObservableProperty]
+    private bool _isPassword = false;
+
+    [ObservableProperty]
+    private int _tabIndex = 0;
+
     // Acrobat Form Calculations & Action Buttons
     [ObservableProperty]
     private CalculationFormula _calculationFormula = CalculationFormula.None;
@@ -129,6 +156,15 @@ public partial class FormFieldElementViewModel : ElementViewModelBase
             BorderColorHex = BorderColorHex,
             BackgroundColorHex = BackgroundColorHex,
             FontSize = FontSize,
+            FontFamily = FontFamily,
+            TextColorHex = TextColorHex,
+            TextAlignment = TextAlignment,
+            ShowBorder = ShowBorder,
+            ShowBackground = ShowBackground,
+            ShowLabel = ShowLabel,
+            MaxLength = MaxLength,
+            IsPassword = IsPassword,
+            TabIndex = TabIndex,
             CalculationFormula = CalculationFormula,
             CalculationSourceFields = CalculationSourceFields,
             ButtonAction = ButtonAction,
@@ -167,6 +203,15 @@ public partial class FormFieldElementViewModel : ElementViewModelBase
             BorderColorHex = form.BorderColorHex;
             BackgroundColorHex = form.BackgroundColorHex;
             FontSize = form.FontSize;
+            FontFamily = form.FontFamily;
+            TextColorHex = form.TextColorHex;
+            TextAlignment = form.TextAlignment;
+            ShowBorder = form.ShowBorder;
+            ShowBackground = form.ShowBackground;
+            ShowLabel = form.ShowLabel;
+            MaxLength = form.MaxLength;
+            IsPassword = form.IsPassword;
+            TabIndex = form.TabIndex;
             CalculationFormula = form.CalculationFormula;
             CalculationSourceFields = form.CalculationSourceFields;
             ButtonAction = form.ButtonAction;

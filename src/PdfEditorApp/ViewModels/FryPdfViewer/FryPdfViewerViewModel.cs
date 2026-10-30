@@ -431,12 +431,26 @@ public partial class FryPdfViewerViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Synchronizes live user-filled form values and modifications from all viewer pages back into <see cref="CurrentDocumentModel"/>.
+    /// </summary>
+    public void SyncCurrentDocumentModel()
+    {
+        if (CurrentDocumentModel == null) return;
+        CurrentDocumentModel.Pages.Clear();
+        foreach (var pageVm in Pages)
+        {
+            CurrentDocumentModel.Pages.Add(pageVm.ToPageModel());
+        }
+    }
+
+    /// <summary>
     /// Exports the current document to standard binary PDF via QuestPDF.
     /// </summary>
     [RelayCommand]
     public async Task ExportPdfAsync()
     {
         if (CurrentDocumentModel == null) return;
+        SyncCurrentDocumentModel();
 
         try
         {

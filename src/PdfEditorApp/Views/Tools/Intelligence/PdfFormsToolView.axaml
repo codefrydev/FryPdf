@@ -129,6 +129,27 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Interactive Form Fields Table if discovered -->
+                <StackPanel Spacing="8" IsVisible="{Binding DiscoveredFields.Count, Converter={StaticResource GreaterThanZeroToBooleanConverter}}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="FormTextbox" Width="16" Height="16" Foreground="#9333EA" />
+                        <TextBlock Text="Interactive Field Values" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource WinTextBrush}" />
+                    </StackPanel>
+
+                    <Border Background="{DynamicResource WinPanelBrush}" BorderBrush="{DynamicResource WinBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource M3ShapeCornerMedium}" Padding="8">
+                        <ItemsControl ItemsSource="{Binding DiscoveredFields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,*" Margin="0,3">
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" FontSize="11" Height="26" Padding="4,2" CornerRadius="{StaticResource M3ShapeCornerSmall}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </StackPanel>
+
             </StackPanel>
         </shell:PdfToolWorkspaceView.OptionsContent>
 
