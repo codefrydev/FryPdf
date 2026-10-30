@@ -65,7 +65,7 @@ public static class HeadlessCliRunner
             var infoVer = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             var versionString = !string.IsNullOrWhiteSpace(infoVer)
                 ? infoVer.Split('+')[0]
-                : (assembly.GetName().Version?.ToString(3) ?? "0.1.2");
+                : (assembly.GetName().Version?.ToString(3) ?? "0.2.0");
 
             Console.WriteLine($"FryPDF version {versionString} (Plugin Architecture Edition)");
             return 0;

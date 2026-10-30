@@ -11,15 +11,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-30
+
 ### Added
+- **Interactive Form Filling Engine:**
+  - Full living controls on Canvas and Reader mode (`TextBox`, `CheckBox`, `ComboBox`, `RadioButton`, `CalendarDatePicker`, and `Signature`).
+  - Scoped AcroForm deconstruction ensuring form fields only appear on their corresponding PDF pages with deterministic disambiguation (`{name}_{page}_{idx}`).
+  - Tab and Shift+Tab sequential keyboard navigation in natural document order.
+  - Automatic formula recalculation and dependency graph execution for calculated fields.
+  - Comprehensive `PdfFormsTool` workspace for tabular inspection, discovery, and batch editing.
+- **Dynamic Text Bounding Auto-Expansion:**
+  - Automatic vertical height expansion as users type multi-line text.
+  - Top-anchored caret initialization preventing lines from scrolling off the top.
 - **Hosts FryWorld.Sdk plugins** next to FryPDF's own, through a second plugin host and a bridge (`Plugins/FryWorldBridge`).
   - **Placement:** their pages, overlays, commands, sidebars, inspectors, dialogs, shortcuts and ribbon tabs appear in FryPDF's UI, and are removed when they unmount.
   - **Services:** they get FryPDF's shell (`IShellService`), settings and theme in FryWorld's shape.
   - **Install location:** they go in the new `fryworld-plugins` folder.
 - **FryPdf.PluginSdk 0.2.0:**
-  - It references FryWorld.Sdk.
+  - References FryWorld.Sdk.
   - Scoped extensions in `PdfEditorApp.Core.Plugins.FryWorldInterop` (`RegisterDocumentImporter`, `RegisterDocumentExporter`, `RegisterTemplate`, `RegisterOcrEngine`, `RegisterDataConnector`, `RegisterCanvasElement`, `IsFryPdfHost`) let FryWorld plugins use FryPDF's PDF features.
-  - Its build targets keep `PdfEditorApp.Core.dll` out of FryWorld plugin packages.
+  - Build targets keep `PdfEditorApp.Core.dll` out of FryWorld plugin packages.
+
+### Changed
+- **Zero-Clipping Export Pipeline:**
+  - Re-architected QuestPDF layer containers with `.MinHeight()` and dynamic text dimension calculation.
+  - Automatic font auto-scaling and single-line layout for compact form inputs ($H < 36\text{ pt}$ or `ShowLabel == false`).
+  - Specialized vector glyph rendering for checkmarks (✓), radio pills (●), and cursive signatures.
+- **Reader-to-Editor Synchronization:**
+  - Live synchronization between reader-filled form inputs and the core document model prior to export.
+
+### Fixed
+- **Canvas Text In-Place Editing Anomalies:**
+  - Eliminated pseudo-HTML tag leakage (`<font=Noto Serif>`, `<size=...>`, `<color=...>`) in `RichTextHelper` and `TextElementViewModel`.
+  - Disabled internal canvas `ScrollViewer` vertical and horizontal scrollbars.
+  - Resolved export truncation where overflowing text lines failed to print.
 
 ### Removed
 - **External plugins:** FryPDF no longer ships or offers any of them (Snake, Music Player, Chess, Scratchpad, Image Editor, C# Code Studio, Telemetry HUD, Tic-Tac-Toe). They are FryWorld.Sdk plugins now, and FryPDF runs them from `fryworld-plugins`.
@@ -60,5 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/)
 - Continuous scroll layout mode and its associated rendering logic from the
   viewer components.
 
-[Unreleased]: https://github.com/CodeFryDev/FryPDF/compare/v0.0.7...HEAD
+[Unreleased]: https://github.com/CodeFryDev/FryPDF/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CodeFryDev/FryPDF/compare/v0.1.3...v0.2.0
+[0.1.3]: https://github.com/CodeFryDev/FryPDF/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/CodeFryDev/FryPDF/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/CodeFryDev/FryPDF/compare/v0.1.0...v0.1.1
 [0.0.7]: https://github.com/CodeFryDev/FryPDF/releases/tag/v0.0.7

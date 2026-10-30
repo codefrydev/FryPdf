@@ -221,7 +221,7 @@ public partial class HomeViewModel : ViewModelBase, IServiceProvider, IDisposabl
                 // fallback
             }
 
-            return "0.1.2";
+            return "0.2.0";
         }
     }
 

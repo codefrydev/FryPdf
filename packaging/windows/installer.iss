@@ -1,6 +1,6 @@
 ; Inno Setup 6 Script for FryPDF by Code Fry Dev
 #ifndef MyAppVersion
-#define MyAppVersion "0.1.2"
+#define MyAppVersion "0.2.0"
 #endif
 
 ; Four-part numeric version for the setup.exe version resource. VersionInfoVersion
